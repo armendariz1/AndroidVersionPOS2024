@@ -3,7 +3,6 @@ package cacean.sorteos;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
-import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.res.Resources;
 import android.os.AsyncTask;
@@ -146,11 +145,9 @@ public class VentaActivity extends Activity implements OnClickListener {
                     .setCancelable(true)
                     .setNegativeButton("Editar", (d, which) -> {
                         editApuesta = true;
-                        EditarApuesta(apuestaId, strNumero, strLugar1, strLugar2, strLugar3);
+                        EditarApuesta(strNumero, strLugar1, strLugar2, strLugar3);
                     })
-                    .setPositiveButton("Borrar", (d, which) -> {
-                        new DownloadTaskDelete().execute("");
-                    })
+                    .setPositiveButton("Borrar", (d, which) -> new DownloadTaskDelete().execute(""))
                     .show();
         });
     }
@@ -173,7 +170,6 @@ public class VentaActivity extends Activity implements OnClickListener {
 
     public void onClick(View v){
         if(v.getId()==R.id.btnSalir){
-            Intent intent = new Intent(Intent.ACTION_MAIN);
             finish();
         }
         if(v.getId()==R.id.btnImprimir){
@@ -222,6 +218,7 @@ public class VentaActivity extends Activity implements OnClickListener {
     }
 
     //Tarea en Background
+    @SuppressLint("StaticFieldLeak")
     private class DownloadTasklvw extends AsyncTask<String, Void, LinkedList<SorteoLvw>>
     {
         protected LinkedList<SorteoLvw> doInBackground(String... args) {
@@ -229,31 +226,33 @@ public class VentaActivity extends Activity implements OnClickListener {
             return ws.getSorteoActivosNew(con,Usuario.user);
         }
         protected void onPostExecute(LinkedList<SorteoLvw> result) {
-            ArrayAdapter<SorteoLvw> spinner_adapter = new ArrayAdapter<SorteoLvw>(VentaActivity.this,android.R.layout.simple_spinner_item,result);
+            ArrayAdapter<SorteoLvw> spinner_adapter = new ArrayAdapter<>(VentaActivity.this, android.R.layout.simple_spinner_item, result);
             spinner_adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
             lvw.setAdapter(spinner_adapter);
         }
     }
 
     //Tarea en Background
+    @SuppressLint("StaticFieldLeak")
     private class DownloadTaskAgregar extends AsyncTask<String, Void, MyWrapper>
     {
         @SuppressLint("WrongThread")
         protected MyWrapper doInBackground(String... args) {
-            MyWrapper res = null;
+            MyWrapper res;
             ErrorApuesta="";
             CargaDatosWS ws=new CargaDatosWS();
             res = ws.agregaApuesta(sorteoId, strNumero, lugar1.getText().toString(), lugar2.getText().toString(), lugar3.getText().toString(), Usuario.user, con);
             return res;
         }
 
+        @SuppressLint("SetTextI18n")
         protected void onPostExecute(MyWrapper result) {
             if (result == null) {
                 Toast.makeText(con, (ErrorApuesta == null || ErrorApuesta.isEmpty()) ? "Sin respuesta del servidor." : ErrorApuesta, Toast.LENGTH_LONG).show();
                 return;
             }
 
-            LinkedList<Apuesta> apuestas = new LinkedList<Apuesta>();
+            LinkedList<Apuesta> apuestas = new LinkedList<>();
             ArrayAdapter<String> adaptador;
             strApuestas= new ArrayList<>();
 
@@ -305,6 +304,7 @@ public class VentaActivity extends Activity implements OnClickListener {
     }
 
     //Tarea en Background
+    @SuppressLint("StaticFieldLeak")
     private class DownloadTaskModificar extends AsyncTask<String, Void, MyWrapper>
     {
         @SuppressLint("WrongThread")
@@ -315,6 +315,7 @@ public class VentaActivity extends Activity implements OnClickListener {
             return res;
         }
 
+        @SuppressLint("SetTextI18n")
         protected void onPostExecute(MyWrapper result) {
             if (result == null) {
                 Toast.makeText(con, "Sin respuesta del servidor.", Toast.LENGTH_LONG).show();
@@ -322,7 +323,7 @@ public class VentaActivity extends Activity implements OnClickListener {
                 return;
             }
 
-            LinkedList<Apuesta> apuestas = new LinkedList<Apuesta>();
+            LinkedList<Apuesta> apuestas = new LinkedList<>();
             ArrayAdapter<String> adaptador;
             strApuestas= new ArrayList<>();
 
@@ -357,7 +358,7 @@ public class VentaActivity extends Activity implements OnClickListener {
         }
     }
 
-    private void EditarApuesta(String apuesta, String numero, String primero, String segundo, String tercero){
+    private void EditarApuesta(String numero, String primero, String segundo, String tercero){
         numeroTxt.setText(numero);
         lugar1.setText(primero);
         lugar2.setText(segundo);
@@ -365,6 +366,7 @@ public class VentaActivity extends Activity implements OnClickListener {
     }
 
     //Tarea en Background
+    @SuppressLint("StaticFieldLeak")
     private class DownloadTaskFin extends AsyncTask<String, Void, String>
     {
         protected String doInBackground(String... args) {
@@ -393,12 +395,12 @@ public class VentaActivity extends Activity implements OnClickListener {
         }
     }
 
+    @SuppressLint("StaticFieldLeak")
     private class DownloadTaskLimpia extends AsyncTask<String, Void, String>
     {
         protected String doInBackground(String... args) {
             CargaDatosWS ws=new CargaDatosWS();
-            String strRes = ws.limpiaTablaTemp(Usuario.user);
-            return strRes;
+            return ws.limpiaTablaTemp(Usuario.user);
         }
 
         protected void onPostExecute(String result) {
@@ -410,6 +412,7 @@ public class VentaActivity extends Activity implements OnClickListener {
     }
 
     //Tarea en Background
+    @SuppressLint("StaticFieldLeak")
     private class DownloadTaskDelete extends AsyncTask<String, Void, MyWrapper>
     {
         protected MyWrapper doInBackground(String... args) {
@@ -417,13 +420,14 @@ public class VentaActivity extends Activity implements OnClickListener {
             return ws.eliminaApuesta(apuestaId, Usuario.user,con);
         }
 
+        @SuppressLint("SetTextI18n")
         protected void onPostExecute(MyWrapper result) {
             if (result == null) {
                 Toast.makeText(con, "Sin respuesta del servidor.", Toast.LENGTH_LONG).show();
                 return;
             }
 
-            LinkedList<Apuesta> apuestas = new LinkedList<Apuesta>();
+            LinkedList<Apuesta> apuestas = new LinkedList<>();
             ArrayAdapter<String> adaptador;
             strApuestas= new ArrayList<>();
 
@@ -459,6 +463,7 @@ public class VentaActivity extends Activity implements OnClickListener {
         }
     }
 
+    @SuppressLint("StaticFieldLeak")
     private class DownloadTaskCopiar extends AsyncTask<String, Void, MyWrapper>
     {
         @SuppressLint("WrongThread")
@@ -469,13 +474,14 @@ public class VentaActivity extends Activity implements OnClickListener {
             return res;
         }
 
+        @SuppressLint("SetTextI18n")
         protected void onPostExecute(MyWrapper result) {
             if (result == null) {
                 Toast.makeText(con, "Sin respuesta del servidor.", Toast.LENGTH_LONG).show();
                 return;
             }
 
-            LinkedList<Apuesta> apuestas = new LinkedList<Apuesta>();
+            LinkedList<Apuesta> apuestas = new LinkedList<>();
             ArrayAdapter<String> adaptador;
             strApuestas= new ArrayList<>();
 
