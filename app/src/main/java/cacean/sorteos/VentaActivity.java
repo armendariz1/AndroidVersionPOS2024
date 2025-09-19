@@ -3,7 +3,6 @@ package cacean.sorteos;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.res.Resources;
@@ -34,15 +33,12 @@ import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 
-import cacean.sorteos.adapter.SorteoAdapter;
-
 public class VentaActivity extends Activity implements OnClickListener {
 
     private Spinner lvw;
     private GridView gvw;
     private EditText numeroTxt;
     static Resources aux;
-    static String reprint;
     private EditText lugar1;
     private EditText lugar2;
     private EditText lugar3;
@@ -60,21 +56,14 @@ public class VentaActivity extends Activity implements OnClickListener {
     private Button cancelar;
     private Button salir;
     private Button copiar;
-    private String res;
-    private ProgressDialog pd;
     private Context con;
     private String strNumero;
     private String strTicket;
     private String ErrorApuesta;
-    private Boolean blnNumero;
     private Boolean editApuesta;
     private String strLugar1;
-    private String Ticket;
-    private Boolean blnLugar1;
     private String strLugar2;
-    private Boolean blnLugar2;
     private String strLugar3;
-    private Boolean blnLugar3;
     private List<String> strApuestas;
 
     @Override
@@ -85,28 +74,28 @@ public class VentaActivity extends Activity implements OnClickListener {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_venta2);
         aux = getResources();
-        usuarioTxt = (TextView)findViewById(R.id.tvwUsuario);
+        usuarioTxt = findViewById(R.id.tvwUsuario);
         usuarioTxt.append(Usuario.nombre);
-        fechaTxt = (TextView)findViewById(R.id.tvwFecha);
+        fechaTxt = findViewById(R.id.tvwFecha);
         Date date = new Date();
         DateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
         fechaTxt.append(dateFormat.format(date));
-        total = (TextView)findViewById(R.id.txtTotal);
-        strUltTicket = (TextView)findViewById(R.id.txtUltTicket);
-        cantAp = (TextView)findViewById(R.id.txtCantAp);
-        limpiar = (Button)findViewById(R.id.btnLimpiar);
+        total = findViewById(R.id.txtTotal);
+        strUltTicket = findViewById(R.id.txtUltTicket);
+        cantAp = findViewById(R.id.txtCantAp);
+        limpiar = findViewById(R.id.btnLimpiar);
         limpiar.setOnClickListener(this);
-        agregar = (Button)findViewById(R.id.btnAgregar);
+        agregar = findViewById(R.id.btnAgregar);
         agregar.setOnClickListener(this);
-        imprimir = (Button)findViewById(R.id.btnImprimir);
+        imprimir = findViewById(R.id.btnImprimir);
         imprimir.setOnClickListener(this);
 
-        copiar = (Button)findViewById(R.id.btnCopiar);
+        copiar = findViewById(R.id.btnCopiar);
         copiar.setOnClickListener(this);
 
-        cancelar = (Button)findViewById(R.id.btnCancelar);
+        cancelar = findViewById(R.id.btnCancelar);
         cancelar.setOnClickListener(this);
-        salir = (Button)findViewById(R.id.btnSalir);
+        salir = findViewById(R.id.btnSalir);
         salir.setOnClickListener(this);
         editApuesta = false;
         con = this;
