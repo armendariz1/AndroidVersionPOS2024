@@ -19,7 +19,6 @@ import android.widget.GridView;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.view.View.OnClickListener;
-import android.app.ProgressDialog;
 import android.content.Context;
 import android.widget.Toast;
 
@@ -45,16 +44,10 @@ public class VentaActivity extends Activity implements OnClickListener {
     private EditText CopiaTicket;
     private String sorteoId;
     private String apuestaId;
-    private TextView usuarioTxt;
-    private TextView fechaTxt;
     private TextView strUltTicket;
     private TextView total;
     private TextView cantAp;
-    private Button limpiar;
     private Button imprimir;
-    private Button agregar;
-    private Button cancelar;
-    private Button salir;
     private Button copiar;
     private Context con;
     private String strNumero;
@@ -74,18 +67,18 @@ public class VentaActivity extends Activity implements OnClickListener {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_venta2);
         aux = getResources();
-        usuarioTxt = findViewById(R.id.tvwUsuario);
+        TextView usuarioTxt = findViewById(R.id.tvwUsuario);
         usuarioTxt.append(Usuario.nombre);
-        fechaTxt = findViewById(R.id.tvwFecha);
+        TextView fechaTxt = findViewById(R.id.tvwFecha);
         Date date = new Date();
-        DateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
+        @SuppressLint("SimpleDateFormat") DateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
         fechaTxt.append(dateFormat.format(date));
         total = findViewById(R.id.txtTotal);
         strUltTicket = findViewById(R.id.txtUltTicket);
         cantAp = findViewById(R.id.txtCantAp);
-        limpiar = findViewById(R.id.btnLimpiar);
+        Button limpiar = findViewById(R.id.btnLimpiar);
         limpiar.setOnClickListener(this);
-        agregar = findViewById(R.id.btnAgregar);
+        Button agregar = findViewById(R.id.btnAgregar);
         agregar.setOnClickListener(this);
         imprimir = findViewById(R.id.btnImprimir);
         imprimir.setOnClickListener(this);
@@ -93,21 +86,21 @@ public class VentaActivity extends Activity implements OnClickListener {
         copiar = findViewById(R.id.btnCopiar);
         copiar.setOnClickListener(this);
 
-        cancelar = findViewById(R.id.btnCancelar);
+        Button cancelar = findViewById(R.id.btnCancelar);
         cancelar.setOnClickListener(this);
-        salir = findViewById(R.id.btnSalir);
+        Button salir = findViewById(R.id.btnSalir);
         salir.setOnClickListener(this);
         editApuesta = false;
         con = this;
-        numeroTxt = (EditText)findViewById(R.id.txtNumero);
-        lugar1 = (EditText)findViewById(R.id.txtLugar1);
-        lugar2 = (EditText)findViewById(R.id.txtLugar2);
-        lugar3 = (EditText)findViewById(R.id.txtLugar3);
-        CopiaTicket = (EditText)findViewById(R.id.txtCopiar) ;
+        numeroTxt = findViewById(R.id.txtNumero);
+        lugar1 = findViewById(R.id.txtLugar1);
+        lugar2 = findViewById(R.id.txtLugar2);
+        lugar3 = findViewById(R.id.txtLugar3);
+        CopiaTicket = findViewById(R.id.txtCopiar);
 
         imprimir.setEnabled(false);
-        lvw = (Spinner)findViewById(R.id.lvwSorteos);
-        gvw = (GridView)findViewById(R.id.gvApuestas);
+        lvw = findViewById(R.id.lvwSorteos);
+        gvw = findViewById(R.id.gvApuestas);
         new DownloadTasklvw().execute("");
         new DownloadTaskLimpia().execute("");
 
@@ -377,7 +370,7 @@ public class VentaActivity extends Activity implements OnClickListener {
         protected String doInBackground(String... args) {
             CargaDatosWS ws=new CargaDatosWS();
             String strTicket;
-            strTicket=ws.crearTicket(sorteoId.toString(),Usuario.user);
+            strTicket=ws.crearTicket(sorteoId,Usuario.user);
             return strTicket;
         }
 
