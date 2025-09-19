@@ -36,9 +36,6 @@ import java.util.List;
 
 import cacean.sorteos.adapter.SorteoAdapter;
 
-//import cacean.sorteos.adapter.SorteoAdapter;
-
-
 public class VentaActivity extends Activity implements OnClickListener {
 
     private Spinner lvw;
@@ -80,6 +77,7 @@ public class VentaActivity extends Activity implements OnClickListener {
     private Boolean blnLugar3;
     private List<String> strApuestas;
 
+    @Override
     protected void onCreate(Bundle savedInstanceState) {
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN);
@@ -125,63 +123,74 @@ public class VentaActivity extends Activity implements OnClickListener {
         new DownloadTaskLimpia().execute("");
 
         lvw.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-
             @Override
-            public void onItemSelected(AdapterView<?> arg0, View arg1,
-                                       int arg2, long arg3) {
-                // TODO Auto-generated method stub
+            public void onItemSelected(AdapterView<?> arg0, View arg1, int arg2, long arg3) {
                 sorteoId = ((SorteoLvw) arg0.getItemAtPosition(arg2)).getId();
-
                 Log.e("Selected item : ", sorteoId);
             }
-
             @Override
-            public void onNothingSelected(AdapterView<?> arg0) {
-                // TODO Auto-generated method stub
-
-            }
+            public void onNothingSelected(AdapterView<?> arg0) { }
         });
 
-        gvw.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+        gvw.setOnItemClickListener((parent, view, position, id) -> {
+            final int BLOCK = 5;
 
-                apuestaId = strApuestas.get(position -(position % 5));
-                strNumero = strApuestas.get(position - (position % 5) + 1);
-                strLugar1 = strApuestas.get(position - (position % 5) + 2);
-                strLugar2 = strApuestas.get(position - (position % 5) + 3);
-                strLugar3 = strApuestas.get(position - (position % 5) + 4);
+            if (strApuestas == null || strApuestas.isEmpty()) return;
 
-                AlertDialog.Builder builder = new AlertDialog.Builder(con);
-                builder.setMessage("Seleccione la operación para la apuesta: " + apuestaId + ".")
-                        .setTitle("Atención!!")
-                        .setCancelable(true)
-                        .setNegativeButton("Editar",
-                                new DialogInterface.OnClickListener() {
-                                    public void onClick(DialogInterface dialog, int id) {
-                                        //Ejecutar editar Apuesta(apuestaId);
-                                        editApuesta = true;
-                                        EditarApuesta(apuestaId, strNumero, strLugar1, strLugar2, strLugar3);
-                                    }
-                                })
-                        .setPositiveButton("Borrar",
-                                new DialogInterface.OnClickListener() {
-                                    public void onClick(DialogInterface dialog, int id) {
-                                        new DownloadTaskDelete().execute(""); // metodo que se debe implementar
-                                    }
-                                });
-                AlertDialog alert = builder.create();
-                alert.show();
-                //Toast.makeText(getApplicationContext(), "Has selecccionado: "  + position + ";" + strApuestas.get(position -(position % 5)) + ";" + strApuestas.get(position), Toast.LENGTH_SHORT).show();
-            }
+            // Snapshot defensivo por si strApuestas cambia en otro hilo
+            final ArrayList<String> data = new ArrayList<>(strApuestas);
+            final int size = data.size();
+
+            // Si por cualquier carrera aún no es múltiplo de 5, no hagas nada
+            if (size < BLOCK || (size % BLOCK) != 0) return;
+
+            // Ancla al inicio de bloque de 5
+            final int base = (position / BLOCK) * BLOCK;
+
+            // Verifica que haya 5 elementos desde 'base'
+            if (base < 0 || base + BLOCK - 1 >= size) return;
+
+            // Lee seguro
+            apuestaId = safeGet(data, base);
+            strNumero = safeGet(data, base + 1);
+            strLugar1 = safeGet(data, base + 2);
+            strLugar2 = safeGet(data, base + 3);
+            strLugar3 = safeGet(data, base + 4);
+
+            // Usa contexto del view para evitar problemas de contexto
+            AlertDialog.Builder builder = new AlertDialog.Builder(view.getContext());
+            builder.setMessage("Seleccione la operación para la apuesta: " + apuestaId + ".")
+                    .setTitle("Atención!!")
+                    .setCancelable(true)
+                    .setNegativeButton("Editar", (d, which) -> {
+                        editApuesta = true;
+                        EditarApuesta(apuestaId, strNumero, strLugar1, strLugar2, strLugar3);
+                    })
+                    .setPositiveButton("Borrar", (d, which) -> {
+                        new DownloadTaskDelete().execute("");
+                    })
+                    .show();
         });
     }
 
+    // Helper para evitar NPE
+    private static String safeGet(List<String> list, int index) {
+        if (list == null || index < 0 || index >= list.size()) return "";
+        String v = list.get(index);
+        return v == null ? "" : v;
+    }
+
+    // Rellena a múltiplos de 5 (evita filas incompletas)
+    private static void padToBlocksOf5(List<String> list) {
+        if (list == null) return;
+        int rem = list.size() % 5;
+        if (rem != 0) {
+            for (int i = 0; i < 5 - rem; i++) list.add("");
+        }
+    }
 
     public void onClick(View v){
-        //respond to clicks
         if(v.getId()==R.id.btnSalir){
-            //Salir
             Intent intent = new Intent(Intent.ACTION_MAIN);
             finish();
         }
@@ -195,10 +204,9 @@ public class VentaActivity extends Activity implements OnClickListener {
                 Toast.makeText(this, e1.getMessage(), Toast.LENGTH_SHORT).show();
             }
             new DownloadTaskFin().execute("");
-
         }
         if(v.getId()==R.id.btnLimpiar){
-           LimpiaApuesta();
+            LimpiaApuesta();
         }
         if(v.getId()==R.id.btnCopiar){
             imprimir.setEnabled(true);
@@ -206,10 +214,6 @@ public class VentaActivity extends Activity implements OnClickListener {
 
             strTicket = CopiaTicket.getText().toString();
             new DownloadTaskCopiar().execute("");
-
-
-            //Salir
-
         }
         if(v.getId()==R.id.btnAgregar){
             imprimir.setEnabled(true);
@@ -224,9 +228,7 @@ public class VentaActivity extends Activity implements OnClickListener {
 
             }else{
                 new DownloadTaskAgregar().execute("");
-                //Limpiar el Número
                 numeroTxt.setText("");
-                //Asignarle el foco al Número
                 numeroTxt.setFocusable(true);
                 numeroTxt.requestFocus();
             }
@@ -240,19 +242,12 @@ public class VentaActivity extends Activity implements OnClickListener {
     //Tarea en Background
     private class DownloadTasklvw extends AsyncTask<String, Void, LinkedList<SorteoLvw>>
     {
-
         protected LinkedList<SorteoLvw> doInBackground(String... args) {
             CargaDatosWS ws=new CargaDatosWS();
-            //Se invoca nuestro metodo
-            //return ws.getSorteoActivos(con);
             return ws.getSorteoActivosNew(con,Usuario.user);
-//            return 1;
         }
-
         protected void onPostExecute(LinkedList<SorteoLvw> result) {
-            //Creamos el adaptador
             ArrayAdapter<SorteoLvw> spinner_adapter = new ArrayAdapter<SorteoLvw>(VentaActivity.this,android.R.layout.simple_spinner_item,result);
-            //Añadimos el layout para el menú y se lo damos al spinner
             spinner_adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
             lvw.setAdapter(spinner_adapter);
         }
@@ -261,107 +256,52 @@ public class VentaActivity extends Activity implements OnClickListener {
     //Tarea en Background
     private class DownloadTaskAgregar extends AsyncTask<String, Void, MyWrapper>
     {
-
         @SuppressLint("WrongThread")
         protected MyWrapper doInBackground(String... args) {
             MyWrapper res = null;
-            //String validaapuesta1,validaapuesta2,validaapuesta3;
             ErrorApuesta="";
-            String strTotal = null;
-            String msg = null;
             CargaDatosWS ws=new CargaDatosWS();
-
-//            String Primero = lugar1.getText().toString();
-//            String Segundo = lugar2.getText().toString();
-//            String Tercero = lugar3.getText().toString();
-//
-//            if (!Primero.equals(""))
-//            {
-//                validaapuesta1 = ws.validaApuesta(sorteoId,strNumero,Primero,"1");
-//                if (!validaapuesta1.equals("00"))
-//                {
-//                    ErrorApuesta=validaapuesta1;
-//                    return res;
-//                }
-//            }
-//            if (!Segundo.equals(""))
-//            {
-//                validaapuesta2 = ws.validaApuesta(sorteoId,strNumero,Segundo,"2");
-//                if (!validaapuesta2.equals("00"))
-//                {
-//                    ErrorApuesta=validaapuesta2;
-//                    return res;
-//                }
-//            }
-//            if (!Tercero.equals(""))
-//            {
-//                validaapuesta3 = ws.validaApuesta(sorteoId,strNumero,Tercero,"3");
-//                if (!validaapuesta3.equals("00"))
-//                {
-//                    ErrorApuesta=validaapuesta3;
-//                    return res;
-//                }
-//            }
-
-            //Se invoca nuestro metodo
             res = ws.agregaApuesta(sorteoId, strNumero, lugar1.getText().toString(), lugar2.getText().toString(), lugar3.getText().toString(), Usuario.user, con);
-
             return res;
-
         }
 
         protected void onPostExecute(MyWrapper result) {
-
-            //No hacer nada
-
-            if( result==null)
-            {
-                Toast.makeText(con,ErrorApuesta, Toast.LENGTH_LONG).show();
-
+            if (result == null) {
+                Toast.makeText(con, (ErrorApuesta == null || ErrorApuesta.isEmpty()) ? "Sin respuesta del servidor." : ErrorApuesta, Toast.LENGTH_LONG).show();
+                return;
             }
-            else
-            {
-                LinkedList<Apuesta> apuestas = new LinkedList<Apuesta>();
-                ArrayAdapter<String> adaptador;
-                strApuestas= new ArrayList<>();
 
-                if (result.code.equals("00")) {
-                    if (result.cant > 0) {
-                        for (int i = 0; i < result.cant; i++) {
+            LinkedList<Apuesta> apuestas = new LinkedList<Apuesta>();
+            ArrayAdapter<String> adaptador;
+            strApuestas= new ArrayList<>();
 
-                            SoapObject so = new SoapObject();
-                            so = (SoapObject) result.soap.getProperty(i);
-                            apuestas.add(new Apuesta(so.getProperty("IdApuesta").toString(), so.getProperty("Numero").toString(), so.getProperty("MontoPrimero").toString(), so.getProperty("MontoSegundo").toString(), so.getProperty("MontoTercero").toString()));
-                            strApuestas.add(so.getProperty("IdApuesta").toString());
-                            strApuestas.add(so.getProperty("Numero").toString());
-                            strApuestas.add(so.getProperty("MontoPrimero").toString());
-                            strApuestas.add(so.getProperty("MontoSegundo").toString());
-                            strApuestas.add(so.getProperty("MontoTercero").toString());
-                        }
-                        //Creamos el adaptador
-                        //SorteoAdapter adapter = new SorteoAdapter(VentaActivity.this,apuestas);
-                        adaptador = new ArrayAdapter<String>(con,android.R.layout.simple_list_item_1,strApuestas);
-
-                        gvw.setAdapter(adaptador);
-
-                        total.setText(result.data);
-                        cantAp.setText(result.cant.toString());
-
-                        strNumero = "";
+            if (result.code.equals("00")) {
+                if (result.cant > 0) {
+                    for (int i = 0; i < result.cant; i++) {
+                        SoapObject so = (SoapObject) result.soap.getProperty(i);
+                        apuestas.add(new Apuesta(so.getProperty("IdApuesta").toString(), so.getProperty("Numero").toString(), so.getProperty("MontoPrimero").toString(), so.getProperty("MontoSegundo").toString(), so.getProperty("MontoTercero").toString()));
+                        strApuestas.add(so.getProperty("IdApuesta").toString());
+                        strApuestas.add(so.getProperty("Numero").toString());
+                        strApuestas.add(so.getProperty("MontoPrimero").toString());
+                        strApuestas.add(so.getProperty("MontoSegundo").toString());
+                        strApuestas.add(so.getProperty("MontoTercero").toString());
                     }
-                    else
-                    {
 
-                        Toast.makeText(con, result.message, Toast.LENGTH_LONG).show();
-                    }
-                }
-                else
-                {
+                    padToBlocksOf5(strApuestas); // 👈 Asegura múltiplos de 5
+                    adaptador = new ArrayAdapter<>(con, android.R.layout.simple_list_item_1, strApuestas);
+                    gvw.setAdapter(adaptador);
+                    gvw.setEnabled(!strApuestas.isEmpty());
+                    gvw.invalidateViews();
 
+                    total.setText(result.data);
+                    cantAp.setText(result.cant.toString());
+                    strNumero = "";
+                } else {
                     Toast.makeText(con, result.message, Toast.LENGTH_LONG).show();
                 }
+            } else {
+                Toast.makeText(con, result.message, Toast.LENGTH_LONG).show();
             }
-
         }
     }
 
@@ -381,25 +321,25 @@ public class VentaActivity extends Activity implements OnClickListener {
         numeroTxt.requestFocus();
         CopiaTicket.setText("");
     }
+
     //Tarea en Background
     private class DownloadTaskModificar extends AsyncTask<String, Void, MyWrapper>
     {
-
         @SuppressLint("WrongThread")
         protected MyWrapper doInBackground(String... args) {
-            MyWrapper res = null;
-            String strTotal = null;
-            String msg = null;
+            MyWrapper res;
             CargaDatosWS ws=new CargaDatosWS();
-            //Se invoca nuestro metodo
             res = ws.modificarApuestaTicket(sorteoId,apuestaId, strNumero, lugar1.getText().toString(), lugar2.getText().toString(), lugar3.getText().toString(), Usuario.user, con);
-
             return res;
         }
 
         protected void onPostExecute(MyWrapper result) {
+            if (result == null) {
+                Toast.makeText(con, "Sin respuesta del servidor.", Toast.LENGTH_LONG).show();
+                editApuesta = false;
+                return;
+            }
 
-            //No hacer nada
             LinkedList<Apuesta> apuestas = new LinkedList<Apuesta>();
             ArrayAdapter<String> adaptador;
             strApuestas= new ArrayList<>();
@@ -407,9 +347,7 @@ public class VentaActivity extends Activity implements OnClickListener {
             if (result.code.equals("00")) {
                 if (result.cant > 0) {
                     for (int i = 0; i < result.cant; i++) {
-
-                        SoapObject so = new SoapObject();
-                        so = (SoapObject) result.soap.getProperty(i);
+                        SoapObject so = (SoapObject) result.soap.getProperty(i);
                         apuestas.add(new Apuesta(so.getProperty("IdApuesta").toString(), so.getProperty("Numero").toString(), so.getProperty("MontoPrimero").toString(), so.getProperty("MontoSegundo").toString(), so.getProperty("MontoTercero").toString()));
                         strApuestas.add(so.getProperty("IdApuesta").toString());
                         strApuestas.add(so.getProperty("Numero").toString());
@@ -417,24 +355,20 @@ public class VentaActivity extends Activity implements OnClickListener {
                         strApuestas.add(so.getProperty("MontoSegundo").toString());
                         strApuestas.add(so.getProperty("MontoTercero").toString());
                     }
-                    //Creamos el adaptador
-                    //SorteoAdapter adapter = new SorteoAdapter(VentaActivity.this,apuestas);
-                    adaptador = new ArrayAdapter<String>(con,android.R.layout.simple_list_item_1,strApuestas);
 
+                    padToBlocksOf5(strApuestas); // 👈 Asegura múltiplos de 5
+                    adaptador = new ArrayAdapter<>(con, android.R.layout.simple_list_item_1, strApuestas);
                     gvw.setAdapter(adaptador);
+                    gvw.setEnabled(!strApuestas.isEmpty());
+                    gvw.invalidateViews();
 
                     total.setText(result.data);
                     cantAp.setText(result.cant.toString());
-
                     strNumero = "";
-                }
-                else
-                {
+                } else {
                     Toast.makeText(con, result.message, Toast.LENGTH_LONG).show();
                 }
-            }
-            else
-            {
+            } else {
                 Toast.makeText(con, result.message, Toast.LENGTH_LONG).show();
             }
             editApuesta = false;
@@ -451,59 +385,42 @@ public class VentaActivity extends Activity implements OnClickListener {
     //Tarea en Background
     private class DownloadTaskFin extends AsyncTask<String, Void, String>
     {
-
         protected String doInBackground(String... args) {
             CargaDatosWS ws=new CargaDatosWS();
             String strTicket;
-
-            //Se invoca nuestro metodo
-
-
-
             strTicket=ws.crearTicket(sorteoId.toString(),Usuario.user);
-
             return strTicket;
         }
 
         protected void onPostExecute(String result) {
-            //revisar respuesta del servicio web
             String strCode = "";
-            if (result.length() > 2)
-            {
+            if (result != null && result.length() > 2) {
                 strCode = result.substring(0,2);
                 result = result.substring(2);
             }
-            if (strCode.equals("00")) {
+            if ("00".equals(strCode)) {
                 strUltTicket.setText(result);
+                gvw.setEnabled(false);           // 👈 deshabilita grid mientras queda vacío
                 gvw.setAdapter(null);
                 total.setText("0");
                 cantAp.setText("0");
                 LimpiaApuesta();
-            }else
-            {
-                Toast.makeText(con, result, Toast.LENGTH_LONG).show();
+            } else {
+                Toast.makeText(con, result == null ? "Sin respuesta del servidor." : result, Toast.LENGTH_LONG).show();
             }
-            //CAVL-INI-MAY.14.2015-
-//            new DownloadTaskLimpia().execute("");
-//            LimpiaApuesta();
-            //CAVL-FIN-
         }
-     }
+    }
 
     private class DownloadTaskLimpia extends AsyncTask<String, Void, String>
     {
-
         protected String doInBackground(String... args) {
             CargaDatosWS ws=new CargaDatosWS();
-            String strRes = "";
-
-            //Se invoca nuestro metodo
-            strRes=ws.limpiaTablaTemp(Usuario.user);
+            String strRes = ws.limpiaTablaTemp(Usuario.user);
             return strRes;
         }
 
         protected void onPostExecute(String result) {
-            //Limpiar spinner
+            gvw.setEnabled(false);               // 👈 deshabilita grid al limpiar
             gvw.setAdapter(null);
             total.setText("0");
             cantAp.setText("0");
@@ -513,15 +430,17 @@ public class VentaActivity extends Activity implements OnClickListener {
     //Tarea en Background
     private class DownloadTaskDelete extends AsyncTask<String, Void, MyWrapper>
     {
-
         protected MyWrapper doInBackground(String... args) {
             CargaDatosWS ws=new CargaDatosWS();
-            //Se invoca nuestro metodo
             return ws.eliminaApuesta(apuestaId, Usuario.user,con);
-//            return 1;
         }
 
         protected void onPostExecute(MyWrapper result) {
+            if (result == null) {
+                Toast.makeText(con, "Sin respuesta del servidor.", Toast.LENGTH_LONG).show();
+                return;
+            }
+
             LinkedList<Apuesta> apuestas = new LinkedList<Apuesta>();
             ArrayAdapter<String> adaptador;
             strApuestas= new ArrayList<>();
@@ -529,9 +448,7 @@ public class VentaActivity extends Activity implements OnClickListener {
             if (result.code.equals("00")) {
                 if (result.cant > 0) {
                     for (int i = 0; i < result.cant; i++) {
-
-                        SoapObject so = new SoapObject();
-                        so = (SoapObject) result.soap.getProperty(i);
+                        SoapObject so = (SoapObject) result.soap.getProperty(i);
                         apuestas.add(new Apuesta(so.getProperty("IdApuesta").toString(), so.getProperty("Numero").toString(), so.getProperty("MontoPrimero").toString(), so.getProperty("MontoSegundo").toString(), so.getProperty("MontoTercero").toString()));
                         strApuestas.add(so.getProperty("IdApuesta").toString());
                         strApuestas.add(so.getProperty("Numero").toString());
@@ -539,45 +456,43 @@ public class VentaActivity extends Activity implements OnClickListener {
                         strApuestas.add(so.getProperty("MontoSegundo").toString());
                         strApuestas.add(so.getProperty("MontoTercero").toString());
                     }
-                    //Creamos el adaptador
-                    //SorteoAdapter adapter = new SorteoAdapter(VentaActivity.this,apuestas);
-                    adaptador = new ArrayAdapter<String>(con,android.R.layout.simple_list_item_1,strApuestas);
 
+                    padToBlocksOf5(strApuestas); // 👈 Asegura múltiplos de 5
+                    adaptador = new ArrayAdapter<>(con, android.R.layout.simple_list_item_1, strApuestas);
                     gvw.setAdapter(adaptador);
+                    gvw.setEnabled(!strApuestas.isEmpty());
+                    gvw.invalidateViews();
 
                     total.setText(result.data);
                     cantAp.setText(result.cant.toString());
-                }
-                else
-                {
+                } else {
+                    gvw.setEnabled(false);       // 👈 si no hay datos, inhabilita
                     gvw.setAdapter(null);
                     total.setText("0");
                     cantAp.setText("0");
                 }
+            } else {
+                Toast.makeText(con, result.message, Toast.LENGTH_LONG).show();
             }
-
         }
     }
 
-
     private class DownloadTaskCopiar extends AsyncTask<String, Void, MyWrapper>
     {
-
         @SuppressLint("WrongThread")
         protected MyWrapper doInBackground(String... args) {
-            MyWrapper res = null;
-            String strTotal = null;
-            String msg = null;
+            MyWrapper res;
             CargaDatosWS ws=new CargaDatosWS();
-            //Se invoca nuestro metodo
             res = ws.CopiaApuestas( strTicket,Usuario.user, con);
-
             return res;
         }
 
         protected void onPostExecute(MyWrapper result) {
+            if (result == null) {
+                Toast.makeText(con, "Sin respuesta del servidor.", Toast.LENGTH_LONG).show();
+                return;
+            }
 
-            //No hacer nada
             LinkedList<Apuesta> apuestas = new LinkedList<Apuesta>();
             ArrayAdapter<String> adaptador;
             strApuestas= new ArrayList<>();
@@ -585,9 +500,7 @@ public class VentaActivity extends Activity implements OnClickListener {
             if (result.code.equals("00")) {
                 if (result.cant > 0) {
                     for (int i = 0; i < result.cant; i++) {
-
-                        SoapObject so = new SoapObject();
-                        so = (SoapObject) result.soap.getProperty(i);
+                        SoapObject so = (SoapObject) result.soap.getProperty(i);
                         apuestas.add(new Apuesta(so.getProperty("ID").toString(), so.getProperty("NUMERO").toString(), so.getProperty("MONTO_APUESTA").toString(), so.getProperty("APUESTA_SEGUNDO").toString(), so.getProperty("APUESTA_TERCERO").toString()));
 
                         strApuestas.add(so.getProperty("ID").toString());
@@ -596,31 +509,22 @@ public class VentaActivity extends Activity implements OnClickListener {
                         strApuestas.add(so.getProperty("APUESTA_SEGUNDO").toString());
                         strApuestas.add(so.getProperty("APUESTA_TERCERO").toString());
                     }
-                    //Creamos el adaptador
-                    //SorteoAdapter adapter = new SorteoAdapter(VentaActivity.this,apuestas);
-                    adaptador = new ArrayAdapter<String>(con,android.R.layout.simple_list_item_1,strApuestas);
 
+                    padToBlocksOf5(strApuestas); // 👈 Asegura múltiplos de 5
+                    adaptador = new ArrayAdapter<>(con, android.R.layout.simple_list_item_1, strApuestas);
                     gvw.setAdapter(adaptador);
+                    gvw.setEnabled(!strApuestas.isEmpty());
+                    gvw.invalidateViews();
 
                     total.setText(result.data);
                     cantAp.setText(result.cant.toString());
-
                     strNumero = "";
-                }
-                else
-                {
-
+                } else {
                     Toast.makeText(con, result.message, Toast.LENGTH_LONG).show();
                 }
-            }
-            else
-            {
-
+            } else {
                 Toast.makeText(con, result.message, Toast.LENGTH_LONG).show();
             }
-
         }
     }
-
 }
-
