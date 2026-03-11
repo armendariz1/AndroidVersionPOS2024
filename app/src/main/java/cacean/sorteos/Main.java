@@ -44,6 +44,7 @@ public class Main extends AppCompatActivity {
 
 
         context=this;
+        ApiClient.BASE_URL = getString(R.string.api_base_url);
         user=(TextView)findViewById(R.id.txtUser);
         pwd=(TextView)findViewById(R.id.txtPwd);
         btnCancel=(Button)findViewById(R.id.btnCancelar);

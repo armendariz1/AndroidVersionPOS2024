@@ -1,4 +1,6 @@
 <resources>
+    <!-- URL base de ApiDonBetoNode. Emulador: 10.0.2.2. Dispositivo real: IP del PC -->
+    <string name="api_base_url">https://apidonbetonode.onrender.com/api</string>
     <string name="app_name">QuinelaDonBeto</string>
     <string name="title_activity_main">Login</string>
 

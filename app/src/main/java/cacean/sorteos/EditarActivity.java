@@ -25,7 +25,6 @@ import android.view.View.OnClickListener;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.widget.Toast;
-import org.ksoap2.serialization.SoapObject;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -262,26 +261,22 @@ public class EditarActivity extends Activity implements OnClickListener {
             edtstrApuestas= new ArrayList<>();
 
             if (result.code.equals("00")) {
-                if (result.cant > 0) {
-                    for (int i = 0; i < result.cant; i++) {
-
-                        SoapObject so = new SoapObject();
-                        so = (SoapObject) result.soap.getProperty(i);
-                        apuestas.add(new Apuesta(so.getProperty("IdApuesta").toString(), so.getProperty("Numero").toString(), so.getProperty("MontoPrimero").toString(), so.getProperty("MontoSegundo").toString(), so.getProperty("MontoTercero").toString()));
-                        edtstrApuestas.add(so.getProperty("IdApuesta").toString());
-                        edtstrApuestas.add(so.getProperty("Numero").toString());
-                        edtstrApuestas.add(so.getProperty("MontoPrimero").toString());
-                        edtstrApuestas.add(so.getProperty("MontoSegundo").toString());
-                        edtstrApuestas.add(so.getProperty("MontoTercero").toString());
+                List<Apuesta> lista = result.getApuestas();
+                if (!lista.isEmpty()) {
+                    for (Apuesta a : lista) {
+                        apuestas.add(a);
+                        edtstrApuestas.add(a.getIdApuesta());
+                        edtstrApuestas.add(a.getNumero());
+                        edtstrApuestas.add(a.getMontoPrimero());
+                        edtstrApuestas.add(a.getMontoSegundo());
+                        edtstrApuestas.add(a.getMontoTercero());
                     }
-                    //Creamos el adaptador
-                    //SorteoAdapter adapter = new SorteoAdapter(VentaActivity.this,apuestas);
                     adaptador = new ArrayAdapter<String>(edtcon,android.R.layout.simple_list_item_1,edtstrApuestas);
 
                     edtgvw.setAdapter(adaptador);
 
                     edttotal.setText(result.data);
-                    edtcantap.setText(result.cant.toString());
+                    edtcantap.setText(String.valueOf(result.cant));
 
                     edtstrNumero = "";
                 }
@@ -321,26 +316,22 @@ public class EditarActivity extends Activity implements OnClickListener {
             edtstrApuestas= new ArrayList<>();
 
             if (result.code.equals("00")) {
-                if (result.cant > 0) {
-                    for (int i = 0; i < result.cant; i++) {
-
-                        SoapObject so = new SoapObject();
-                        so = (SoapObject) result.soap.getProperty(i);
-                        apuestas.add(new Apuesta(so.getProperty("IdApuesta").toString(), so.getProperty("Numero").toString(), so.getProperty("MontoPrimero").toString(), so.getProperty("MontoSegundo").toString(), so.getProperty("MontoTercero").toString()));
-                        edtstrApuestas.add(so.getProperty("IdApuesta").toString());
-                        edtstrApuestas.add(so.getProperty("Numero").toString());
-                        edtstrApuestas.add(so.getProperty("MontoPrimero").toString());
-                        edtstrApuestas.add(so.getProperty("MontoSegundo").toString());
-                        edtstrApuestas.add(so.getProperty("MontoTercero").toString());
+                List<Apuesta> lista = result.getApuestas();
+                if (!lista.isEmpty()) {
+                    for (Apuesta a : lista) {
+                        apuestas.add(a);
+                        edtstrApuestas.add(a.getIdApuesta());
+                        edtstrApuestas.add(a.getNumero());
+                        edtstrApuestas.add(a.getMontoPrimero());
+                        edtstrApuestas.add(a.getMontoSegundo());
+                        edtstrApuestas.add(a.getMontoTercero());
                     }
-                    //Creamos el adaptador
-                    //SorteoAdapter adapter = new SorteoAdapter(VentaActivity.this,apuestas);
                     adaptador = new ArrayAdapter<String>(edtcon,android.R.layout.simple_list_item_1,edtstrApuestas);
 
                     edtgvw.setAdapter(adaptador);
 
                     edttotal.setText(result.data);
-                    edtcantap.setText(result.cant.toString());
+                    edtcantap.setText(String.valueOf(result.cant));
 
                     edtstrNumero = "";
 
@@ -443,26 +434,22 @@ public class EditarActivity extends Activity implements OnClickListener {
             edtstrApuestas= new ArrayList<>();
 
             if (result.code.equals("00")) {
-                if (result.cant > 0) {
-                    for (int i = 0; i < result.cant; i++) {
-
-                        SoapObject so = new SoapObject();
-                        so = (SoapObject) result.soap.getProperty(i);
-                        apuestas.add(new Apuesta(so.getProperty("IdApuesta").toString(), so.getProperty("Numero").toString(), so.getProperty("MontoPrimero").toString(), so.getProperty("MontoSegundo").toString(), so.getProperty("MontoTercero").toString()));
-                        edtstrApuestas.add(so.getProperty("IdApuesta").toString());
-                        edtstrApuestas.add(so.getProperty("Numero").toString());
-                        edtstrApuestas.add(so.getProperty("MontoPrimero").toString());
-                        edtstrApuestas.add(so.getProperty("MontoSegundo").toString());
-                        edtstrApuestas.add(so.getProperty("MontoTercero").toString());
+                List<Apuesta> lista = result.getApuestas();
+                if (!lista.isEmpty()) {
+                    for (Apuesta a : lista) {
+                        apuestas.add(a);
+                        edtstrApuestas.add(a.getIdApuesta());
+                        edtstrApuestas.add(a.getNumero());
+                        edtstrApuestas.add(a.getMontoPrimero());
+                        edtstrApuestas.add(a.getMontoSegundo());
+                        edtstrApuestas.add(a.getMontoTercero());
                     }
-                    //Creamos el adaptador
-                    //SorteoAdapter adapter = new SorteoAdapter(VentaActivity.this,apuestas);
                     adaptador = new ArrayAdapter<String>(edtcon,android.R.layout.simple_list_item_1,edtstrApuestas);
 
                     edtgvw.setAdapter(adaptador);
 
                     edttotal.setText(result.data);
-                    edtcantap.setText(result.cant.toString());
+                    edtcantap.setText(String.valueOf(result.cant));
                 }
                 else
                 {
@@ -493,21 +480,17 @@ public class EditarActivity extends Activity implements OnClickListener {
             edtstrApuestas= new ArrayList<>();
 
             if (result.code.equals("00")) {
-                edtcantap.setText(result.cant.toString());
-                if (result.cant > 0) {
-                    for (int i = 0; i < result.cant; i++) {
-
-                        SoapObject so = new SoapObject();
-                        so = (SoapObject) result.soap.getProperty(i);
-                        apuestas.add(new Apuesta(so.getProperty("IdApuesta").toString(), so.getProperty("Numero").toString(), so.getProperty("MontoPrimero").toString(), so.getProperty("MontoSegundo").toString(), so.getProperty("MontoTercero").toString()));
-                        edtstrApuestas.add(so.getProperty("IdApuesta").toString());
-                        edtstrApuestas.add(so.getProperty("Numero").toString());
-                        edtstrApuestas.add(so.getProperty("MontoPrimero").toString());
-                        edtstrApuestas.add(so.getProperty("MontoSegundo").toString());
-                        edtstrApuestas.add(so.getProperty("MontoTercero").toString());
+                List<Apuesta> lista = result.getApuestas();
+                edtcantap.setText(String.valueOf(result.cant));
+                if (!lista.isEmpty()) {
+                    for (Apuesta a : lista) {
+                        apuestas.add(a);
+                        edtstrApuestas.add(a.getIdApuesta());
+                        edtstrApuestas.add(a.getNumero());
+                        edtstrApuestas.add(a.getMontoPrimero());
+                        edtstrApuestas.add(a.getMontoSegundo());
+                        edtstrApuestas.add(a.getMontoTercero());
                     }
-                    //Creamos el adaptador
-                    //SorteoAdapter adapter = new SorteoAdapter(VentaActivity.this,apuestas);
                     adaptador = new ArrayAdapter<String>(edtcon,android.R.layout.simple_list_item_1,edtstrApuestas);
 
                     edtgvw.setAdapter(adaptador);

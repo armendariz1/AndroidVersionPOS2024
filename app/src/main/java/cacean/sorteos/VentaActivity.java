@@ -23,7 +23,6 @@ import android.widget.Toast;
 
 import com.minipos.device.SDK;
 
-import org.ksoap2.serialization.SoapObject;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -257,25 +256,25 @@ public class VentaActivity extends Activity implements OnClickListener {
             strApuestas= new ArrayList<>();
 
             if (result.code.equals("00")) {
-                if (result.cant > 0) {
-                    for (int i = 0; i < result.cant; i++) {
-                        SoapObject so = (SoapObject) result.soap.getProperty(i);
-                        apuestas.add(new Apuesta(so.getProperty("IdApuesta").toString(), so.getProperty("Numero").toString(), so.getProperty("MontoPrimero").toString(), so.getProperty("MontoSegundo").toString(), so.getProperty("MontoTercero").toString()));
-                        strApuestas.add(so.getProperty("IdApuesta").toString());
-                        strApuestas.add(so.getProperty("Numero").toString());
-                        strApuestas.add(so.getProperty("MontoPrimero").toString());
-                        strApuestas.add(so.getProperty("MontoSegundo").toString());
-                        strApuestas.add(so.getProperty("MontoTercero").toString());
+                List<Apuesta> lista = result.getApuestas();
+                if (!lista.isEmpty()) {
+                    for (Apuesta a : lista) {
+                        apuestas.add(a);
+                        strApuestas.add(a.getIdApuesta());
+                        strApuestas.add(a.getNumero());
+                        strApuestas.add(a.getMontoPrimero());
+                        strApuestas.add(a.getMontoSegundo());
+                        strApuestas.add(a.getMontoTercero());
                     }
 
-                    padToBlocksOf5(strApuestas); // 👈 Asegura múltiplos de 5
+                    padToBlocksOf5(strApuestas);
                     adaptador = new ArrayAdapter<>(con, android.R.layout.simple_list_item_1, strApuestas);
                     gvw.setAdapter(adaptador);
                     gvw.setEnabled(!strApuestas.isEmpty());
                     gvw.invalidateViews();
 
                     total.setText(result.data);
-                    cantAp.setText(result.cant.toString());
+                    cantAp.setText(String.valueOf(result.cant));
                     strNumero = "";
                 } else {
                     Toast.makeText(con, result.message, Toast.LENGTH_LONG).show();
@@ -328,25 +327,25 @@ public class VentaActivity extends Activity implements OnClickListener {
             strApuestas= new ArrayList<>();
 
             if (result.code.equals("00")) {
-                if (result.cant > 0) {
-                    for (int i = 0; i < result.cant; i++) {
-                        SoapObject so = (SoapObject) result.soap.getProperty(i);
-                        apuestas.add(new Apuesta(so.getProperty("IdApuesta").toString(), so.getProperty("Numero").toString(), so.getProperty("MontoPrimero").toString(), so.getProperty("MontoSegundo").toString(), so.getProperty("MontoTercero").toString()));
-                        strApuestas.add(so.getProperty("IdApuesta").toString());
-                        strApuestas.add(so.getProperty("Numero").toString());
-                        strApuestas.add(so.getProperty("MontoPrimero").toString());
-                        strApuestas.add(so.getProperty("MontoSegundo").toString());
-                        strApuestas.add(so.getProperty("MontoTercero").toString());
+                List<Apuesta> lista = result.getApuestas();
+                if (!lista.isEmpty()) {
+                    for (Apuesta a : lista) {
+                        apuestas.add(a);
+                        strApuestas.add(a.getIdApuesta());
+                        strApuestas.add(a.getNumero());
+                        strApuestas.add(a.getMontoPrimero());
+                        strApuestas.add(a.getMontoSegundo());
+                        strApuestas.add(a.getMontoTercero());
                     }
 
-                    padToBlocksOf5(strApuestas); // 👈 Asegura múltiplos de 5
+                    padToBlocksOf5(strApuestas);
                     adaptador = new ArrayAdapter<>(con, android.R.layout.simple_list_item_1, strApuestas);
                     gvw.setAdapter(adaptador);
                     gvw.setEnabled(!strApuestas.isEmpty());
                     gvw.invalidateViews();
 
                     total.setText(result.data);
-                    cantAp.setText(result.cant.toString());
+                    cantAp.setText(String.valueOf(result.cant));
                     strNumero = "";
                 } else {
                     Toast.makeText(con, result.message, Toast.LENGTH_LONG).show();
@@ -432,25 +431,25 @@ public class VentaActivity extends Activity implements OnClickListener {
             strApuestas= new ArrayList<>();
 
             if (result.code.equals("00")) {
-                if (result.cant > 0) {
-                    for (int i = 0; i < result.cant; i++) {
-                        SoapObject so = (SoapObject) result.soap.getProperty(i);
-                        apuestas.add(new Apuesta(so.getProperty("IdApuesta").toString(), so.getProperty("Numero").toString(), so.getProperty("MontoPrimero").toString(), so.getProperty("MontoSegundo").toString(), so.getProperty("MontoTercero").toString()));
-                        strApuestas.add(so.getProperty("IdApuesta").toString());
-                        strApuestas.add(so.getProperty("Numero").toString());
-                        strApuestas.add(so.getProperty("MontoPrimero").toString());
-                        strApuestas.add(so.getProperty("MontoSegundo").toString());
-                        strApuestas.add(so.getProperty("MontoTercero").toString());
+                List<Apuesta> lista = result.getApuestas();
+                if (!lista.isEmpty()) {
+                    for (Apuesta a : lista) {
+                        apuestas.add(a);
+                        strApuestas.add(a.getIdApuesta());
+                        strApuestas.add(a.getNumero());
+                        strApuestas.add(a.getMontoPrimero());
+                        strApuestas.add(a.getMontoSegundo());
+                        strApuestas.add(a.getMontoTercero());
                     }
 
-                    padToBlocksOf5(strApuestas); // 👈 Asegura múltiplos de 5
+                    padToBlocksOf5(strApuestas);
                     adaptador = new ArrayAdapter<>(con, android.R.layout.simple_list_item_1, strApuestas);
                     gvw.setAdapter(adaptador);
                     gvw.setEnabled(!strApuestas.isEmpty());
                     gvw.invalidateViews();
 
                     total.setText(result.data);
-                    cantAp.setText(result.cant.toString());
+                    cantAp.setText(String.valueOf(result.cant));
                 } else {
                     gvw.setEnabled(false);       // 👈 si no hay datos, inhabilita
                     gvw.setAdapter(null);
@@ -486,26 +485,25 @@ public class VentaActivity extends Activity implements OnClickListener {
             strApuestas= new ArrayList<>();
 
             if (result.code.equals("00")) {
-                if (result.cant > 0) {
-                    for (int i = 0; i < result.cant; i++) {
-                        SoapObject so = (SoapObject) result.soap.getProperty(i);
-                        apuestas.add(new Apuesta(so.getProperty("ID").toString(), so.getProperty("NUMERO").toString(), so.getProperty("MONTO_APUESTA").toString(), so.getProperty("APUESTA_SEGUNDO").toString(), so.getProperty("APUESTA_TERCERO").toString()));
-
-                        strApuestas.add(so.getProperty("ID").toString());
-                        strApuestas.add(so.getProperty("NUMERO").toString());
-                        strApuestas.add(so.getProperty("MONTO_APUESTA").toString());
-                        strApuestas.add(so.getProperty("APUESTA_SEGUNDO").toString());
-                        strApuestas.add(so.getProperty("APUESTA_TERCERO").toString());
+                List<Apuesta> lista = result.getApuestas();
+                if (!lista.isEmpty()) {
+                    for (Apuesta a : lista) {
+                        apuestas.add(a);
+                        strApuestas.add(a.getIdApuesta());
+                        strApuestas.add(a.getNumero());
+                        strApuestas.add(a.getMontoPrimero());
+                        strApuestas.add(a.getMontoSegundo());
+                        strApuestas.add(a.getMontoTercero());
                     }
 
-                    padToBlocksOf5(strApuestas); // 👈 Asegura múltiplos de 5
+                    padToBlocksOf5(strApuestas);
                     adaptador = new ArrayAdapter<>(con, android.R.layout.simple_list_item_1, strApuestas);
                     gvw.setAdapter(adaptador);
                     gvw.setEnabled(!strApuestas.isEmpty());
                     gvw.invalidateViews();
 
                     total.setText(result.data);
-                    cantAp.setText(result.cant.toString());
+                    cantAp.setText(String.valueOf(result.cant));
                     strNumero = "";
                 } else {
                     Toast.makeText(con, result.message, Toast.LENGTH_LONG).show();

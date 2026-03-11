@@ -3,1063 +3,564 @@ package cacean.sorteos;
 import android.content.Context;
 import android.util.Log;
 import android.widget.Toast;
-import org.ksoap2.SoapEnvelope;
-import org.ksoap2.serialization.SoapObject;
-import org.ksoap2.serialization.SoapPrimitive;
-import org.ksoap2.serialization.SoapSerializationEnvelope;
-import org.ksoap2.transport.HttpTransportSE;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
 
+import java.util.ArrayList;
 import java.util.LinkedList;
+import java.util.List;
 
-
+/**
+ * Cliente para ApiDonBetoNode (REST).
+ * Reemplaza las llamadas SOAP a Service1.svc y WSPuntosBeto.asmx.
+ * Entradas y salidas idénticas para transparencia con la aplicación POS2024.
+ */
 public class CargaDatosWS {
+
+    private static final String KEY_USUARIO = "usuario";
+    private static final String KEY_ID_TICKET = "idTicket";
+    private static final String KEY_ID_SORTEO = "idSorteo";
+    private static final String KEY_CODIGO = "Codigo";
+    private static final String KEY_MENSAJE = "Mensaje";
+    private static final String MSG_ERROR_CONEXION = "Error de conexión";
+    private static final String PREFIX_ERROR = "Error ";
+    private static final String MSG_ERROR_SIN_RESPUESTA = "Error: Sin respuesta";
+    private static final String PREFIX_ERROR_COLON = "Error: ";
+    private static final String MSG_ERROR_CONSULTA_VENTAS = "Error al consultar las ventas";
+    private static final String MSG_SIN_RESPUESTA = "Sin respuesta";
+
     public CargaDatosWS(TicketActivity ticketActivity) {
     }
 
     public CargaDatosWS() {
-
     }
 
-    public String getUsuario(String usuario, String pw)
-    {
-        String res=null;
-        final String NAMESPACE = "http://tempuri.org/";
-        final String URL = "http://cacean.com/Service1.svc";
-        final String SOAPACTION = "http://tempuri.org/SorteoWS/validarUsuario";
-        final String METHOD = "validarUsuario";
-
-
-        try
-        {
-
-            // Model the request
-            SoapObject request = new SoapObject(NAMESPACE, METHOD);
-
-            //Add the parameters
-            request.addProperty("usuario", usuario); // Paso parametros al WS
-            request.addProperty("pw",pw); // Paso parametros al WS
-
-            //Model the envelope
-            SoapSerializationEnvelope envelope = new SoapSerializationEnvelope(SoapEnvelope.VER11);
-            envelope.dotNet = true;
-            envelope.setOutputSoapObject(request);
-
-            //Model the transport
-            HttpTransportSE androidHttpTransport = new HttpTransportSE(URL);
-
-            //Call the Web Service
-            androidHttpTransport.call(SOAPACTION, envelope);
-
-            //Get the response
-            SoapObject response = (SoapObject) envelope.getResponse();
-
-            //Obtener resultados de salida
-            String code = response.getPropertyAsString("Codigo").toString();
-            String msg = response.getPropertyAsString("Mensaje").toString();
-
+    public String getUsuario(String usuario, String pw) {
+        String res = null;
+        try {
+            JSONObject body = ApiClient.json(KEY_USUARIO, usuario, "pw", pw);
+            JSONObject response = ApiClient.post("/validarUsuario", body);
+            if (response == null) {
+                return MSG_ERROR_CONEXION;
+            }
+            String code = response.optString(KEY_CODIGO, "");
+            String msg = response.optString(KEY_MENSAJE, "");
             String[] strAux = msg.split(",");
 
             Usuario.user = usuario;
 
-            if (code.equals("00"))
-            {
-                Usuario.nombre = strAux[0];
-                Usuario.paterno = strAux[1];
-                Usuario.perfil = strAux[2];
-                res = "Bienvenido "+Usuario.nombre;
-            }
-            else
-            {
-                res="Error " + msg;
+            if ("00".equals(code)) {
+                Usuario.nombre = strAux.length > 0 ? strAux[0] : "";
+                Usuario.paterno = strAux.length > 1 ? strAux[1] : "";
+                Usuario.perfil = strAux.length > 2 ? strAux[2] : "";
+                res = "Bienvenido " + Usuario.nombre;
+            } else {
+                res = PREFIX_ERROR + msg;
                 Usuario.perfil = "";
             }
-
-        }
-        catch(Exception e)
-        {
-            //e.printStackTrace();
-            res=e.toString();
+        } catch (Exception e) {
+            res = e.toString();
         }
         return res;
     }
 
-    public String validaEditar(String ticket)
-    {
-        String res=null;
-        final String NAMESPACE = "http://tempuri.org/";
-        final String URL = "http://cacean.com/Service1.svc";
-        final String SOAPACTION = "http://tempuri.org/SorteoWS/verificaEditarTicket";
-        final String METHOD = "verificaEditarTicket";
+    public String validaEditar(String ticket) {
+        String res = null;
+        try {
+            JSONObject body = ApiClient.json(KEY_ID_TICKET, ticket);
+            JSONObject response = ApiClient.post("/verificaEditarTicket", body);
+            if (response == null) {
+                return MSG_ERROR_SIN_RESPUESTA;
+            }
+            String code = response.optString(KEY_CODIGO, "");
+            String msg = response.optString(KEY_MENSAJE, "");
 
-
-        try
-        {
-
-            // Model the request
-            SoapObject request = new SoapObject(NAMESPACE, METHOD);
-
-            //Add the parameters
-            request.addProperty("idTicket", ticket); // Paso parametros al WS
-
-            //Model the envelope
-            SoapSerializationEnvelope envelope = new SoapSerializationEnvelope(SoapEnvelope.VER11);
-            envelope.dotNet = true;
-            envelope.setOutputSoapObject(request);
-
-            //Model the transport
-            HttpTransportSE androidHttpTransport = new HttpTransportSE(URL);
-
-            //Call the Web Service
-            androidHttpTransport.call(SOAPACTION, envelope);
-
-            //Get the response
-            SoapObject response = (SoapObject) envelope.getResponse();
-
-            //Obtener resultados de salida
-            String code = response.getPropertyAsString("Codigo").toString();
-            String msg = response.getPropertyAsString("Mensaje").toString();
-
-            if (code.equals("00"))
-            {
+            if ("00".equals(code)) {
                 res = code + msg;
-            }
-            else
-            {
-                res=msg;
-            }
-
-        }
-        catch(Exception e)
-        {
-            //e.printStackTrace();
-            res="Error: " + e.toString();
-        }
-        return res;
-    }
-
-    public String validaTicket(String ticket)
-    {
-        SoapObject response= new SoapObject();
-        String res = "";
-        final String NAMESPACE = "http://tempuri.org/";
-        final String URL = "http://cacean.com/Service1.svc";
-        final String SOAPACTION = "http://tempuri.org/SorteoWS/verificaTicket";
-        final String METHOD = "verificaTicket";
-
-
-        try
-        {
-
-            // Model the request
-            SoapObject request = new SoapObject(NAMESPACE, METHOD);
-
-            //Add the parameters
-            request.addProperty("parametro", ticket); // Paso parametros al WS
-            //request.addProperty("usuario",user); // Paso parametros al WS
-
-            //Model the envelope
-            SoapSerializationEnvelope envelope = new SoapSerializationEnvelope(SoapEnvelope.VER11);
-            envelope.dotNet = true;
-            envelope.setOutputSoapObject(request);
-
-            //Model the transport
-            HttpTransportSE androidHttpTransport = new HttpTransportSE(URL);
-
-            //Call the Web Service
-            androidHttpTransport.call(SOAPACTION, envelope);
-
-            //Get the response
-            response = (SoapObject) envelope.getResponse();
-
-            //Obtener resultados de salida
-            String code = response.getPropertyAsString("Codigo").toString();
-            String msg = response.getPropertyAsString("Mensaje").toString();
-
-            if(code == "00"){
-                res = "OK" + msg;
-            }
-            else{
+            } else {
                 res = msg;
             }
-        }
-        catch(Exception e)
-        {
-            //e.printStackTrace();
-            res="Error: " + e.getMessage();
+        } catch (Exception e) {
+            res = PREFIX_ERROR_COLON + e.toString();
         }
         return res;
     }
 
-    public String marcaTicketPagado(String ticket,String usuario)
-    {
-        SoapObject response= new SoapObject();
+    public String validaTicket(String ticket) {
         String res = "";
-        final String NAMESPACE = "http://tempuri.org/";
-        final String URL = "http://cacean.com/Service1.svc";
-        final String SOAPACTION = "http://tempuri.org/SorteoWS/marcaTicketPagado";
-        final String METHOD = "marcaTicketPagado";
-
-
-        try
-        {
-
-            // Model the request
-            SoapObject request = new SoapObject(NAMESPACE, METHOD);
-
-            //Add the parameters
-            request.addProperty("ticket", ticket); // Paso parametros al WS
-            request.addProperty("usuario", usuario); // Paso parametros al WS
-
-            //Model the envelope
-            SoapSerializationEnvelope envelope = new SoapSerializationEnvelope(SoapEnvelope.VER11);
-            envelope.dotNet = true;
-            envelope.setOutputSoapObject(request);
-
-            //Model the transport
-            HttpTransportSE androidHttpTransport = new HttpTransportSE(URL);
-
-            //Call the Web Service
-            androidHttpTransport.call(SOAPACTION, envelope);
-
-            //Get the response
-            response = (SoapObject) envelope.getResponse();
-
-            //Obtener resultados de salida
-            String code = response.getPropertyAsString("Codigo").toString();
-            String msg = response.getPropertyAsString("Mensaje").toString();
-
-            if(code == "00"){
-                res = "OK" + msg;
+        try {
+            JSONObject body = ApiClient.json("parametro", ticket);
+            JSONObject response = ApiClient.post("/verificaTicket", body);
+            if (response == null) {
+                return MSG_ERROR_SIN_RESPUESTA;
             }
-            else{
+            String code = response.optString(KEY_CODIGO, "");
+            String msg = response.optString(KEY_MENSAJE, "");
+
+            if ("00".equals(code)) {
+                res = "OK" + msg;
+            } else {
                 res = msg;
             }
-        }
-        catch(Exception e)
-        {
-            //e.printStackTrace();
-            res="Error: " + e.getMessage();
+        } catch (Exception e) {
+            res = PREFIX_ERROR_COLON + (e.getMessage() != null ? e.getMessage() : e.toString());
         }
         return res;
     }
 
-    public String crearTicket(String sorteo,String user)
-    {
-        String res=null;
-        String puntos,sucursal;
-        final String NAMESPACE = "http://tempuri.org/";
-        final String URL = "http://cacean.com/Service1.svc";
-        final String SOAPACTION = "http://tempuri.org/SorteoWS/crearTicket";
-        final String METHOD = "crearTicket";
+    public String marcaTicketPagado(String ticket, String usuario) {
+        String res = "";
+        try {
+            JSONObject body = ApiClient.json("ticket", ticket, KEY_USUARIO, usuario);
+            JSONObject response = ApiClient.post("/marcaTicketPagado", body);
+            if (response == null) {
+                return MSG_ERROR_SIN_RESPUESTA;
+            }
+            String code = response.optString(KEY_CODIGO, "");
+            String msg = response.optString(KEY_MENSAJE, "");
 
+            if ("00".equals(code)) {
+                res = "OK" + msg;
+            } else {
+                res = msg;
+            }
+        } catch (Exception e) {
+            res = PREFIX_ERROR_COLON + (e.getMessage() != null ? e.getMessage() : e.toString());
+        }
+        return res;
+    }
 
-        try
-        {
-
-            // Model the request
-            SoapObject request = new SoapObject(NAMESPACE, METHOD);
-
-            //Add the parameters
-            request.addProperty("idSorteo", sorteo); // Paso parametros al WS
-            request.addProperty("usuario",user); // Paso parametros al WS
-
-            //Model the envelope
-            SoapSerializationEnvelope envelope = new SoapSerializationEnvelope(SoapEnvelope.VER11);
-            envelope.dotNet = true;
-            envelope.setOutputSoapObject(request);
-
-            //Model the transport
-            HttpTransportSE androidHttpTransport = new HttpTransportSE(URL);
-
-            //Call the Web Service
-            androidHttpTransport.call(SOAPACTION, envelope);
-
-            //Get the response
-            SoapObject response = (SoapObject) envelope.getResponse();
-
-            //Obtener resultados de salida
-            String code = response.getPropertyAsString("Codigo").toString();
-            String msg = response.getPropertyAsString("Mensaje").toString();
-            //CAVL-INI-MAY.14.2015-
-            String ticket = response.getPropertyAsString("NumeroTicket").toString();
-            String strcopies =  response.getPropertyAsString("Impresiones").toString();
-            //msg esta agregandole saltos de línea al inicio, la siguiente línea
-            //es para quitarlos.
+    public String crearTicket(String sorteo, String user) {
+        String res = null;
+        String puntos;
+        String sucursal;
+        try {
+            JSONObject body = ApiClient.json(KEY_ID_SORTEO, sorteo, KEY_USUARIO, user);
+            JSONObject response = ApiClient.post("/crearTicket", body);
+            if (response == null) {
+                return MSG_ERROR_CONEXION;
+            }
+            String code = response.optString(KEY_CODIGO, "");
+            String msg = response.optString(KEY_MENSAJE, "");
+            String ticket = response.optString("NumeroTicket", "");
             msg = msg.trim();
-            //Centrar el texto
             msg = "      " + msg;
-            //CAVL-FIN-
 
             puntos = getPuntos(ticket).trim();
 
-            if (!puntos.equals("NO"))
-            {
+            if (!"NO".equals(puntos) && puntos != null && !puntos.isEmpty()) {
                 msg = msg + "\r\n       Puntos Don Beto";
                 msg = msg + "\r\n        Vale " + puntos.trim() + " puntos";
             }
 
             sucursal = NombreSuc(user);
-
             msg = msg + "\r\nVendido en sucursal:" + sucursal;
 
-
-
-
-            if (code.equals("00"))
-            {
-                //res="OK, Usr: " + Usuario.user + ", Nombre: " + Usuario.nombre + ", Paterno: " + Usuario.paterno + ", Perfil: " + Usuario.perfil;
-                //CAVL-INI-MAY.14.2015-
+            if ("00".equals(code)) {
                 Imprimir imprime = new Imprimir();
-//                for (int i = 0; i < copies; i++)
-//                {
-//                    res = imprime.PrintStr(msg, "VENTA", ticket);
-//                }
-                //if (strcopies.equals("1"))
-               // {
-                    res = imprime.PrintStr(msg, "VENTA", ticket,Usuario.user);
-               // }else
-               // {
-               //     res = imprime.PrintDblStr(msg, "VENTA", ticket);
-               // }
-                //CAVL-FIN-
+                res = imprime.PrintStr(msg, "VENTA", ticket, Usuario.user);
                 res = code + ticket;
+            } else {
+                res = msg;
             }
-            else
-            {
-                res= msg;
-            }
-
-        }
-        catch(Exception e)
-        {
-            //e.printStackTrace();
-            res=e.toString();
+        } catch (Exception e) {
+            res = e.toString();
         }
         return res;
     }
 
-    public MyWrapper editarTicket(String ticket,String user, Context cont)
-    {
-        SoapObject response = new SoapObject();
+    public MyWrapper editarTicket(String ticket, String user, Context cont) {
         String code = null;
         String msg = null;
         String strTotal = null;
-        SoapObject strApuestas = null;
-        Integer cant = null;
-        final String NAMESPACE = "http://tempuri.org/";
-        final String URL = "http://cacean.com/Service1.svc";
-        final String SOAPACTION = "http://tempuri.org/SorteoWS/editarTicket";
-        final String METHOD = "editarTicket";
+        List<Apuesta> apuestas = new ArrayList<>();
+        Integer cant = 0;
 
-
-        try
-        {
-
-            // Model the request
-            SoapObject request = new SoapObject(NAMESPACE, METHOD);
-
-            //Add the parameters
-            request.addProperty("idTicket", ticket); // Paso parametros al WS
-            request.addProperty("usuario",user); // Paso parametros al WS
-
-            //Model the envelope
-            SoapSerializationEnvelope envelope = new SoapSerializationEnvelope(SoapEnvelope.VER11);
-            envelope.dotNet = true;
-            envelope.setOutputSoapObject(request);
-
-            //Model the transport
-            HttpTransportSE androidHttpTransport = new HttpTransportSE(URL);
-
-            //Call the Web Service
-            androidHttpTransport.call(SOAPACTION, envelope);
-
-            //Get the response
-            response = (SoapObject) envelope.getResponse();
-
-            //Obtener resultados de salida
-            code = response.getPropertyAsString("Codigo").toString();
-            msg = response.getPropertyAsString("Mensaje").toString();
-
-            if (code.equals("00")) {
-                strTotal = response.getPropertyAsString("TotalTemp");
-                strApuestas = (SoapObject) (response.getProperty("ApuestasTemp"));
-                cant = strApuestas.getPropertyCount();
+        try {
+            JSONObject body = ApiClient.json(KEY_ID_TICKET, ticket, KEY_USUARIO, user);
+            JSONObject response = ApiClient.post("/editarTicket", body);
+            if (response == null) {
+                return new MyWrapper(apuestas, "", 0, "02", MSG_SIN_RESPUESTA);
             }
+            code = response.optString(KEY_CODIGO, "");
+            msg = response.optString(KEY_MENSAJE, "");
+
+            if ("00".equals(code)) {
+                strTotal = response.optString("TotalTemp", "");
+                JSONArray arr = response.optJSONArray("ApuestasTemp");
+                if (arr != null) {
+                    apuestas = parseApuestasTemp(arr);
+                    cant = apuestas.size();
+                }
+            }
+        } catch (Exception e) {
+            Log.e(CargaDatosWS.class.getSimpleName(), "", e);
         }
-        catch(Exception e)
-        {
-            Log.e(CargaDatosWS.class.getSimpleName(),"",e);
-        }
-        return new MyWrapper(strApuestas,strTotal,cant,code,msg);
+        return new MyWrapper(apuestas, strTotal, cant, code, msg);
     }
 
-    public MyWrapper eliminaApuesta(String apuesta,String user,Context cont)
-    {
-        SoapObject response = new SoapObject();
+    public MyWrapper eliminaApuesta(String apuesta, String user, Context cont) {
         String code = null;
         String msg = null;
         String strTotal = null;
-        SoapObject strApuestas = null;
-        Integer cant = null;
-        final String NAMESPACE = "http://tempuri.org/";
-        final String URL = "http://cacean.com/Service1.svc";
-        final String SOAPACTION = "http://tempuri.org/SorteoWS/eliminaApuesta";
-        final String METHOD = "eliminaApuesta";
+        List<Apuesta> apuestas = new ArrayList<>();
+        Integer cant = 0;
 
-
-        try
-        {
-
-            // Model the request
-            SoapObject request = new SoapObject(NAMESPACE, METHOD);
-
-            //Add the parameters
-            request.addProperty("idApuesta", apuesta); // Paso parametros al WS
-            request.addProperty("usuario",user); // Paso parametros al WS
-
-            //Model the envelope
-            SoapSerializationEnvelope envelope = new SoapSerializationEnvelope(SoapEnvelope.VER11);
-            envelope.dotNet = true;
-            envelope.setOutputSoapObject(request);
-
-            //Model the transport
-            HttpTransportSE androidHttpTransport = new HttpTransportSE(URL);
-
-            //Call the Web Service
-            androidHttpTransport.call(SOAPACTION, envelope);
-
-            //Get the response
-            response = (SoapObject) envelope.getResponse();
-
-            //Obtener resultados de salida
-            code = response.getPropertyAsString("Codigo");
-            msg = response.getPropertyAsString("Mensaje");
-            strTotal = response.getPropertyAsString("TotalTemp");
-            strApuestas = (SoapObject)(response.getProperty("ApuestasTemp"));
-            cant = strApuestas.getPropertyCount();
-
+        try {
+            JSONObject body = ApiClient.json("idApuesta", apuesta, KEY_USUARIO, user);
+            JSONObject response = ApiClient.post("/eliminaApuesta", body);
+            if (response == null) {
+                return new MyWrapper(apuestas, "", 0, "02", MSG_SIN_RESPUESTA);
+            }
+            code = response.optString(KEY_CODIGO, "");
+            msg = response.optString(KEY_MENSAJE, "");
+            strTotal = response.optString("TotalTemp", "");
+            JSONArray arr = response.optJSONArray("ApuestasTemp");
+            if (arr != null) {
+                apuestas = parseApuestasTemp(arr);
+                cant = apuestas.size();
+            }
+        } catch (Exception e) {
+            Log.e(CargaDatosWS.class.getSimpleName(), "", e);
         }
-        catch(Exception e)
-        {
-            Log.e(CargaDatosWS.class.getSimpleName(),"",e);
-        }
-        return new MyWrapper(strApuestas,strTotal,cant,code,msg);
+        return new MyWrapper(apuestas, strTotal, cant, code, msg);
     }
 
-    public String eliminaTicket(String ticket,String user)
-    {
-        String res=null;
-        final String NAMESPACE = "http://tempuri.org/";
-        final String URL = "http://cacean.com/Service1.svc";
-        final String SOAPACTION = "http://tempuri.org/SorteoWS/eliminaTicket";
-        final String METHOD = "eliminaTicket";
-
-
-        try
-        {
-
-            // Model the request
-            SoapObject request = new SoapObject(NAMESPACE, METHOD);
-
-            //Add the parameters
-            request.addProperty("idTicket", ticket); // Paso parametros al WS
-            request.addProperty("usuario",user); // Paso parametros al WS
-
-            //Model the envelope
-            SoapSerializationEnvelope envelope = new SoapSerializationEnvelope(SoapEnvelope.VER11);
-            envelope.dotNet = true;
-            envelope.setOutputSoapObject(request);
-
-            //Model the transport
-            HttpTransportSE androidHttpTransport = new HttpTransportSE(URL);
-
-            //Call the Web Service
-            androidHttpTransport.call(SOAPACTION, envelope);
-
-            //Get the response
-            SoapObject response = (SoapObject) envelope.getResponse();
-
-            //Obtener resultados de salida
-            String code = response.getPropertyAsString("Codigo").toString();
-            String msg = response.getPropertyAsString("Mensaje").toString();
-
-            if (code.equals("00"))
-            {
-                //res="OK, Usr: " + Usuario.user + ", Nombre: " + Usuario.nombre + ", Paterno: " + Usuario.paterno + ", Perfil: " + Usuario.perfil;
-                res = "Respuesta correcta "+msg;
+    public String eliminaTicket(String ticket, String user) {
+        String res = null;
+        try {
+            JSONObject body = ApiClient.json(KEY_ID_TICKET, ticket, KEY_USUARIO, user);
+            JSONObject response = ApiClient.post("/eliminaTicket", body);
+            if (response == null) {
+                return MSG_ERROR_CONEXION;
             }
-            else
-            {
-                res="Error " + msg;
-            }
+            String code = response.optString(KEY_CODIGO, "");
+            String msg = response.optString(KEY_MENSAJE, "");
 
-        }
-        catch(Exception e)
-        {
-            //e.printStackTrace();
-            res=e.toString();
+            if ("00".equals(code)) {
+                res = "Respuesta correcta " + msg;
+            } else {
+                res = PREFIX_ERROR + msg;
+            }
+        } catch (Exception e) {
+            res = e.toString();
         }
         return res;
     }
 
-    public MyWrapper agregaApuesta(String sorteo, String numero,String monto1,String monto2, String monto3, String user, Context cont)
-    {
-        SoapObject response = new SoapObject();
+    public MyWrapper agregaApuesta(String sorteo, String numero, String monto1, String monto2, String monto3, String user, Context cont) {
         String code = null;
         String msg = null;
         String strTotal = null;
-        SoapObject strApuestas = null;
-        Integer cant = null;
-        final String NAMESPACE = "http://tempuri.org/";
-        final String URL = "http://cacean.com/Service1.svc";
-        final String SOAPACTION = "http://tempuri.org/SorteoWS/insertaApuesta";
-        final String METHOD = "insertaApuesta";
+        List<Apuesta> apuestas = new ArrayList<>();
+        Integer cant = 0;
 
-        try
-        {
-
-            // Model the request
-            SoapObject request = new SoapObject(NAMESPACE, METHOD);
-
-            //Add the parameters
-            request.addProperty("idSorteo",sorteo);// Paso parametros al WS
-            request.addProperty("numero", numero);
-            request.addProperty("montoPrimero", monto1);
-            request.addProperty("montoSegundo",monto2);
-            request.addProperty("montoTercero",monto3);
-            request.addProperty("usuario",user); // Paso parametros al WS
-
-            //Model the envelope
-            SoapSerializationEnvelope envelope = new SoapSerializationEnvelope(SoapEnvelope.VER11);
-            envelope.dotNet = true;
-            envelope.setOutputSoapObject(request);
-
-            //Model the transport
-            HttpTransportSE androidHttpTransport = new HttpTransportSE(URL);
-
-            //Call the Web Service
-            androidHttpTransport.call(SOAPACTION, envelope);
-
-            //Get the response
-            response = (SoapObject) envelope.getResponse();
-
-            //Obtener resultados de salida
-            code = response.getPropertyAsString("Codigo");
-            msg = response.getPropertyAsString("Mensaje");
-            if (code.equals("00")) {
-                strTotal = response.getPropertyAsString("TotalTemp");
-                strApuestas = (SoapObject) (response.getProperty("ApuestasTemp"));
-                cant = strApuestas.getPropertyCount();
+        try {
+            JSONObject body = ApiClient.json(
+                    KEY_ID_SORTEO, sorteo,
+                    "numero", numero,
+                    "montoPrimero", monto1,
+                    "montoSegundo", monto2,
+                    "montoTercero", monto3,
+                    KEY_USUARIO, user
+            );
+            JSONObject response = ApiClient.post("/insertaApuesta", body);
+            if (response == null) {
+                return new MyWrapper(apuestas, "", 0, "02", MSG_SIN_RESPUESTA);
             }
-            else
-            {
+            code = response.optString(KEY_CODIGO, "");
+            msg = response.optString(KEY_MENSAJE, "");
+
+            if ("00".equals(code)) {
+                strTotal = response.optString("TotalTemp", "");
+                JSONArray arr = response.optJSONArray("ApuestasTemp");
+                if (arr != null) {
+                    apuestas = parseApuestasTemp(arr);
+                    cant = apuestas.size();
+                }
+            } else {
                 Toast.makeText(cont, msg, Toast.LENGTH_LONG).show();
             }
+        } catch (Exception e) {
+            Log.e(CargaDatosWS.class.getSimpleName(), "", e);
         }
-        catch(Exception e)
-        {
-            Log.e(CargaDatosWS.class.getSimpleName(),"",e);
-        }
-        return new MyWrapper(strApuestas,strTotal,cant,code,msg);
+        return new MyWrapper(apuestas, strTotal, cant, code, msg);
     }
 
-    public String limpiaTablaTemp(String user)
-    {
-        String res=null;
-        final String NAMESPACE = "http://tempuri.org/";
-        final String URL = "http://cacean.com/Service1.svc";
-        final String SOAPACTION = "http://tempuri.org/SorteoWS/limpiaTablaTemp";
-        final String METHOD = "limpiaTablaTemp";
-
-
-        try
-        {
-
-            // Model the request
-            SoapObject request = new SoapObject(NAMESPACE, METHOD);
-
-            //Add the parameters
-            request.addProperty("usuario",user); // Paso parametros al WS
-
-            //Model the envelope
-            SoapSerializationEnvelope envelope = new SoapSerializationEnvelope(SoapEnvelope.VER11);
-            envelope.dotNet = true;
-            envelope.setOutputSoapObject(request);
-
-            //Model the transport
-            HttpTransportSE androidHttpTransport = new HttpTransportSE(URL);
-
-            //Call the Web Service
-            androidHttpTransport.call(SOAPACTION, envelope);
-
-            //Get the response
-            SoapObject response = (SoapObject) envelope.getResponse();
-
-            //Obtener resultados de salida
-            res = response.getPropertyAsString("Codigo").toString();
-            //String msg = response.getPropertyAsString("Mensaje").toString();
-
-        }
-        catch(Exception e)
-        {
-            Log.e(CargaDatosWS.class.getSimpleName(),"",e);
-            //e.printStackTrace();
-            res=e.toString();
+    public String limpiaTablaTemp(String user) {
+        String res = null;
+        try {
+            JSONObject body = ApiClient.json(KEY_USUARIO, user);
+            JSONObject response = ApiClient.post("/limpiaTablaTemp", body);
+            if (response == null) {
+                return MSG_ERROR_CONEXION;
+            }
+            res = response.optString(KEY_CODIGO, "");
+        } catch (Exception e) {
+            Log.e(CargaDatosWS.class.getSimpleName(), "", e);
+            res = e.toString();
         }
         return res;
     }
 
-    public MyWrapper modificarApuestaTicket(String sorteo,String apuesta, String numero, String monto1, String monto2, String monto3, String user,Context cont)
-    {
-        SoapObject response = new SoapObject();
+    public MyWrapper modificarApuestaTicket(String sorteo, String apuesta, String numero, String monto1, String monto2, String monto3, String user, Context cont) {
         String code = null;
         String msg = null;
         String strTotal = null;
-        SoapObject strApuestas = null;
-        Integer cant = null;
-        final String NAMESPACE = "http://tempuri.org/";
-        final String URL = "http://cacean.com/Service1.svc";
-        final String SOAPACTION = "http://tempuri.org/SorteoWS/modificarApuestaTicket";
-        final String METHOD = "modificarApuestaTicket";
+        List<Apuesta> apuestas = new ArrayList<>();
+        Integer cant = 0;
 
-
-        try
-        {
-
-            // Model the request
-            SoapObject request = new SoapObject(NAMESPACE, METHOD);
-
-            //Add the parameters
-            request.addProperty("idSorteo",sorteo); // Paso parametros al WS
-            request.addProperty("idApuesta", apuesta);
-            request.addProperty("numero",numero);
-            request.addProperty("montoPrimero",monto1);
-            request.addProperty("montoSegundo",monto2);
-            request.addProperty("montoTercero",monto3);
-            request.addProperty("usuario",user); // Paso parametros al WS
-
-            //Model the envelope
-            SoapSerializationEnvelope envelope = new SoapSerializationEnvelope(SoapEnvelope.VER11);
-            envelope.dotNet = true;
-            envelope.setOutputSoapObject(request);
-
-            //Model the transport
-            HttpTransportSE androidHttpTransport = new HttpTransportSE(URL);
-
-            //Call the Web Service
-            androidHttpTransport.call(SOAPACTION, envelope);
-
-            //Get the response
-            response = (SoapObject) envelope.getResponse();
-
-            //Obtener resultados de salida
-            code = response.getPropertyAsString("Codigo");
-            msg = response.getPropertyAsString("Mensaje");
-            strTotal = response.getPropertyAsString("TotalTemp");
-            strApuestas = (SoapObject)(response.getProperty("ApuestasTemp"));
-            cant = strApuestas.getPropertyCount();
-
+        try {
+            JSONObject body = ApiClient.json(
+                    KEY_ID_SORTEO, sorteo,
+                    "idApuesta", apuesta,
+                    "numero", numero,
+                    "montoPrimero", monto1,
+                    "montoSegundo", monto2,
+                    "montoTercero", monto3,
+                    KEY_USUARIO, user
+            );
+            JSONObject response = ApiClient.post("/modificarApuestaTicket", body);
+            if (response == null) {
+                return new MyWrapper(apuestas, "", 0, "02", MSG_SIN_RESPUESTA);
+            }
+            code = response.optString(KEY_CODIGO, "");
+            msg = response.optString(KEY_MENSAJE, "");
+            strTotal = response.optString("TotalTemp", "");
+            JSONArray arr = response.optJSONArray("ApuestasTemp");
+            if (arr != null) {
+                apuestas = parseApuestasTemp(arr);
+                cant = apuestas.size();
+            }
+        } catch (Exception e) {
+            Log.e(CargaDatosWS.class.getSimpleName(), "", e);
         }
-        catch(Exception e)
-        {
-            Log.e(CargaDatosWS.class.getSimpleName(),"",e);
-        }
-        return new MyWrapper(strApuestas,strTotal,cant,code,msg);
+        return new MyWrapper(apuestas, strTotal, cant, code, msg);
     }
 
-    public String terminaEditarTicket(String ticket,String user)
-    {
-        String res=null;
-        final String NAMESPACE = "http://tempuri.org/";
-        final String URL = "http://cacean.com/Service1.svc";
-        final String SOAPACTION = "http://tempuri.org/SorteoWS/terminaEditarTicket";
-        final String METHOD = "terminaEditarTicket";
-
-
-        try
-        {
-
-            // Model the request
-            SoapObject request = new SoapObject(NAMESPACE, METHOD);
-
-            //Add the parameters
-            request.addProperty("idTicket", ticket); // Paso parametros al WS
-            request.addProperty("usuario",user); // Paso parametros al WS
-
-            //Model the envelope
-            SoapSerializationEnvelope envelope = new SoapSerializationEnvelope(SoapEnvelope.VER11);
-            envelope.dotNet = true;
-            envelope.setOutputSoapObject(request);
-
-            //Model the transport
-            HttpTransportSE androidHttpTransport = new HttpTransportSE(URL);
-
-            //Call the Web Service
-            androidHttpTransport.call(SOAPACTION, envelope);
-
-            //Get the response
-            SoapObject response = (SoapObject) envelope.getResponse();
-
-            //Obtener resultados de salida
-            String code = response.getPropertyAsString("Codigo").toString();
-            String msg = response.getPropertyAsString("Mensaje").toString();
-
-            //CAVL-INI-MAY.14.2015-
-            String strcopies =  response.getPropertyAsString("Impresiones").toString();
-            //msg esta agregandole saltos de línea al inicio, la siguiente línea
-            //es para quitarlos.
+    public String terminaEditarTicket(String ticket, String user) {
+        String res = null;
+        try {
+            JSONObject body = ApiClient.json(KEY_ID_TICKET, ticket, KEY_USUARIO, user);
+            JSONObject response = ApiClient.post("/terminaEditarTicket", body);
+            if (response == null) {
+                return MSG_ERROR_CONEXION;
+            }
+            String code = response.optString(KEY_CODIGO, "");
+            String msg = response.optString(KEY_MENSAJE, "");
             msg = msg.trim();
-            //Centrar el texto
             msg = "      " + msg;
-            //CAVL-FIN-
 
-            if (code.equals("00"))
-            {
+            if ("00".equals(code)) {
                 Imprimir imprime = new Imprimir();
-                //if (strcopies.equals("1"))
-               // {
-                    res = imprime.PrintStr(msg, "EDITAR", ticket,Usuario.user);
-                //}else
-               // {
-               //     res = imprime.PrintDblStr(msg, "EDITAR", ticket);
-               //}
+                res = imprime.PrintStr(msg, "EDITAR", ticket, Usuario.user);
                 res = code;
+            } else {
+                res = PREFIX_ERROR + msg;
             }
-            else
-            {
-                res="Error " + msg;
-            }
-
-        }
-        catch(Exception e)
-        {
-            //e.printStackTrace();
-            res=e.toString();
+        } catch (Exception e) {
+            res = e.toString();
         }
         return res;
     }
 
-    public String getPuntos(String idticket)
-    {
+    public String getPuntos(String idticket) {
         String res;
-        final String NAMESPACE = "http://cacean.org/";
-        final String URL = "http://getpoints.cacean.com/WSPuntosBeto.asmx"; //godaddy
-        final String SOAPACTION = "http://cacean.org/GetPoints";
-        final String METHOD = "GetPoints";
-
-        try
-        {
-
-            // Model the request
-            SoapObject request = new SoapObject(NAMESPACE, METHOD);
-            //Add the parameters
-            request.addProperty("idticket", idticket); // Paso parametros al WS
-            //Model the envelope
-            SoapSerializationEnvelope envelope = new SoapSerializationEnvelope(SoapEnvelope.VER11);
-            envelope.dotNet = true;
-            envelope.setOutputSoapObject(request);
-            //Model the transport
-            HttpTransportSE androidHttpTransport = new HttpTransportSE(URL);
-            //Call the Web Service
-            androidHttpTransport.call(SOAPACTION, envelope);
-            //Get the response
-            SoapPrimitive response = (SoapPrimitive) envelope.getResponse();
-            //Obtener resultados de salida
-            String msg = response.getValue().toString();
-            res = msg;
-
-        }
-        catch(Exception e)
-        {
-            res="Err imprimir puntos";
+        try {
+            JSONObject body = ApiClient.json("idticket", idticket);
+            JSONObject response = ApiClient.post("/getPoints", body);
+            if (response == null) {
+                return "NO";
+            }
+            String code = response.optString(KEY_CODIGO, "");
+            if ("00".equals(code)) {
+                res = response.optString("Resultado", "");
+            } else {
+                res = "NO";
+            }
+        } catch (Exception e) {
+            res = "NO";
         }
         return res;
     }
 
-    public LinkedList<SorteoLvw> getSorteoActivosNew(Context cont,String user)
-    {
-        LinkedList<SorteoLvw> sorteos = new LinkedList<SorteoLvw>();
-        String res=null;
+    public LinkedList<SorteoLvw> getSorteoActivosNew(Context cont, String user) {
+        LinkedList<SorteoLvw> sorteos = new LinkedList<>();
+        try {
+            JSONObject body = ApiClient.json("idusuario", user);
+            JSONObject response = ApiClient.post("/getSorteos", body);
+            if (response == null) {
+                return sorteos;
+            }
+            String code = response.optString(KEY_CODIGO, "");
+            JSONArray arr = response.optJSONArray("Sorteos");
 
-        final String NAMESPACE = "http://cacean.org/";
-        final String URL = "http://getpoints.cacean.com/WSPuntosBeto.asmx"; //godaddy
-        final String SOAPACTION = "http://cacean.org/GetSorteos";
-        final String METHOD = "GetSorteos";
-
-
-        try
-        {
-
-            // Model the request
-            SoapObject request = new SoapObject(NAMESPACE, METHOD);
-
-            request.addProperty("idusuario", user); // Paso parametros al WS
-            //Model the envelope
-            SoapSerializationEnvelope envelope = new SoapSerializationEnvelope(SoapEnvelope.VER11);
-            envelope.dotNet = true;
-            envelope.setOutputSoapObject(request);
-
-            //Model the transport
-            HttpTransportSE androidHttpTransport = new HttpTransportSE(URL);
-
-            //Call the Web Service
-            androidHttpTransport.call(SOAPACTION, envelope);
-
-            //Get the response
-            SoapObject response = (SoapObject) envelope.getResponse();
-
-            String code = response.getPropertyAsString("Codigo").toString();
-            String msg = response.getPropertyAsString("Mensaje").toString();
-            SoapObject strSorteos = (SoapObject)(response.getProperty("Sorteos"));
-            Integer cant = strSorteos.getPropertyCount();
-
-            if (code.equals("00"))
-            {
-                if (cant > 0)
-                {
-                    for (int i = 0; i < cant; i++) {
-
-                        SoapObject so = new SoapObject();
-                        so = (SoapObject)strSorteos.getProperty(i);
-
-                        sorteos.add(new SorteoLvw(so.getProperty("IdSorteo").toString(),so.getProperty("FechaSorteo").toString() + " " + so.getProperty("NombreSorteo").toString()));
-
-                    }
+            if ("00".equals(code) && arr != null) {
+                for (int i = 0; i < arr.length(); i++) {
+                    JSONObject so = arr.getJSONObject(i);
+                    String id = so.optString("IdSorteo", "");
+                    String fecha = so.optString("FechaSorteo", "");
+                    String nombre = so.optString("NombreSorteo", "");
+                    sorteos.add(new SorteoLvw(id, fecha + " " + nombre));
                 }
-
             }
-            else
-            {
-                res="Error " + msg;
-            }
-            int[] id_views = new int[]{android.R.id.text1,android.R.id.text2};
-
-        }
-        catch(Exception e)
-        {
-            Log.e(CargaDatosWS.class.getSimpleName(),"",e);
-            res=e.toString();
+        } catch (Exception e) {
+            Log.e(CargaDatosWS.class.getSimpleName(), "", e);
         }
         return sorteos;
     }
 
-    public String NombreSuc(String user)
-    {
+    public String NombreSuc(String user) {
         String res;
-        final String NAMESPACE = "http://cacean.org/";
-        final String URL = "http://getpoints.cacean.com/WSPuntosBeto.asmx"; //godaddy
-        final String SOAPACTION = "http://cacean.org/GetSucursal";
-        final String METHOD = "GetSucursal";
-
-
-        try
-        {
-
-            // Model the request
-            SoapObject request = new SoapObject(NAMESPACE, METHOD);
-
-            //Add the parameters
-            request.addProperty("idusuario",user); // Paso parametros al WS
-
-            //Model the envelope
-            SoapSerializationEnvelope envelope = new SoapSerializationEnvelope(SoapEnvelope.VER11);
-            envelope.dotNet = true;
-            envelope.setOutputSoapObject(request);
-
-            //Model the transport
-            HttpTransportSE androidHttpTransport = new HttpTransportSE(URL);
-
-            //Call the Web Service
-            androidHttpTransport.call(SOAPACTION, envelope);
-
-            //Get the response
-            SoapObject response = (SoapObject) envelope.getResponse();
-            res = response.getPropertyAsString("NombreSucursal").toString();
-
-        }
-        catch(Exception e)
-        {
-            res="N/A";
+        try {
+            JSONObject body = ApiClient.json("idusuario", user);
+            JSONObject response = ApiClient.post("/getSucursal", body);
+            if (response == null) {
+                return "N/A";
+            }
+            res = response.optString("NombreSucursal", "N/A");
+        } catch (Exception e) {
+            res = "N/A";
         }
         return res;
     }
 
-    public MyWrapper CopiaApuestas(String ticket, String user, Context cont)
-    {
-        SoapObject response = new SoapObject();
+    public MyWrapper CopiaApuestas(String ticket, String user, Context cont) {
         String code = null;
         String msg = null;
         String strTotal = null;
-        SoapObject strApuestas = null;
-        Integer cant = null;
+        List<Apuesta> apuestas = new ArrayList<>();
+        Integer cant = 0;
 
-
-        final String NAMESPACE = "http://cacean.org/";
-        final String URL = "http://getpoints.cacean.com/WSPuntosBeto.asmx"; //godaddy
-        final String SOAPACTION = "http://cacean.org/GetApuestas";
-        final String METHOD = "GetApuestas";
-
-        try
-        {
-
-            // Model the request
-            SoapObject request = new SoapObject(NAMESPACE, METHOD);
-
-            //Add the parameters
-            request.addProperty("id_ticket",ticket);// Paso parametros al WS
-            request.addProperty("user", user);
-
-
-            //Model the envelope
-            SoapSerializationEnvelope envelope = new SoapSerializationEnvelope(SoapEnvelope.VER11);
-            envelope.dotNet = true;
-            envelope.setOutputSoapObject(request);
-
-            //Model the transport
-            HttpTransportSE androidHttpTransport = new HttpTransportSE(URL);
-
-            //Call the Web Service
-            androidHttpTransport.call(SOAPACTION, envelope);
-
-            //Get the response
-            response = (SoapObject) envelope.getResponse();
-
-            //Obtener resultados de salida
-            code = response.getPropertyAsString("Codigo");
-            msg = response.getPropertyAsString("Mensaje");
-            if (code.equals("00")) {
-                strTotal = response.getPropertyAsString("data");
-                strApuestas = (SoapObject) (response.getProperty("Apuestas"));
-                cant = strApuestas.getPropertyCount();
+        try {
+            JSONObject body = ApiClient.json("id_ticket", ticket, "user", user);
+            JSONObject response = ApiClient.post("/getApuestas", body);
+            if (response == null) {
+                return new MyWrapper(apuestas, "", 0, "02", MSG_SIN_RESPUESTA);
             }
-            else
-            {
+            code = response.optString(KEY_CODIGO, "");
+            msg = response.optString(KEY_MENSAJE, "");
+
+            if ("00".equals(code)) {
+                strTotal = response.optString("Data", "");
+                JSONArray arr = response.optJSONArray("Apuestas");
+                if (arr != null) {
+                    apuestas = parseApuestasGetApuestas(arr);
+                    cant = apuestas.size();
+                }
+            } else {
                 Toast.makeText(cont, msg, Toast.LENGTH_LONG).show();
             }
+        } catch (Exception e) {
+            Log.e(CargaDatosWS.class.getSimpleName(), "", e);
         }
-        catch(Exception e)
-        {
-            Log.e(CargaDatosWS.class.getSimpleName(),"",e);
-        }
-        return new MyWrapper(strApuestas,strTotal,cant,code,msg);
+        return new MyWrapper(apuestas, strTotal, cant, code, msg);
     }
 
-    public ReporteVenta getReporteventas(String idUsuario)
-    {
+    public ReporteVenta getReporteventas(String idUsuario) {
         ReporteVenta res = new ReporteVenta();
-        final String NAMESPACE = "http://cacean.org/";
-        final String URL = "http://getpoints.cacean.com/WSPuntosBeto.asmx"; //godaddy
-        final String SOAPACTION = "http://cacean.org/GetReporteVentas";
-        final String METHOD = "GetReporteVentas";
-
-        try
-        {
-
-            // Model the request
-            SoapObject request = new SoapObject(NAMESPACE, METHOD);
-            //Add the parameters
-            request.addProperty("idUsuario", idUsuario); // Paso parametros al WS
-            //Model the envelope
-            SoapSerializationEnvelope envelope = new SoapSerializationEnvelope(SoapEnvelope.VER11);
-            envelope.dotNet = true;
-            envelope.setOutputSoapObject(request);
-            //Model the transport
-            HttpTransportSE androidHttpTransport = new HttpTransportSE(URL);
-            //Call the Web Service
-            androidHttpTransport.call(SOAPACTION, envelope);
-
-            //Get the response
-            SoapObject response = (SoapObject) envelope.getResponse();
-            //Obtener resultados de salida
-
-            res.reporteText="";
-
-            res.codigo = response.getPropertyAsString("codigo");
-
-            if (res.codigo.equals("00")) {
-
-                res.idSucursal = response.getPropertyAsString("idSucursal");
-                res.nombreSucursal = response.getPropertyAsString("nombreSucursal");
-                res.idSorteo = response.getPropertyAsString("idSorteo");
-                res.nombreSorteo = response.getPropertyAsString("nombreSorteo");
-                res.ventaHoy = response.getPropertyAsString("ventaHoy");
-
-                res.nombreSorteo1 = response.getPropertyAsString("nombreSorteo1");
-                res.fechaSorteo1 = response.getPropertyAsString("fechaSorteo1");
-                res.ventaSorteo1 = response.getPropertyAsString("ventaSorteo1");
-
-                res.nombreSorteo2 = response.getPropertyAsString("nombreSorteo2");
-                res.fechaSorteo2 = response.getPropertyAsString("fechaSorteo2");
-                res.ventaSorteo2 = response.getPropertyAsString("ventaSorteo2");
-
-                res.nombreSorteo3 = response.getPropertyAsString("nombreSorteo3");
-                res.fechaSorteo3 = response.getPropertyAsString("fechaSorteo3");
-                res.ventaSorteo3 = response.getPropertyAsString("ventaSorteo3");
-
-                res.nombreSorteo4 = response.getPropertyAsString("nombreSorteo4");
-                res.fechaSorteo4 = response.getPropertyAsString("fechaSorteo4");
-                res.ventaSorteo4 = response.getPropertyAsString("ventaSorteo4");
-
-                res.nombreSorteo5 = response.getPropertyAsString("nombreSorteo5");
-                res.fechaSorteo5 = response.getPropertyAsString("fechaSorteo5");
-                res.ventaSorteo5 = response.getPropertyAsString("ventaSorteo5");
-
-                res.reporteText = response.getPropertyAsString("reporteText");
-
-                res.msg = "Reporte generado correctamente";
-
-
-            } else {
-                res.msg = "Error al consultar las ventas";
+        try {
+            JSONObject body = ApiClient.json("idUsuario", idUsuario);
+            JSONObject response = ApiClient.post("/getReporteVentas", body);
+            if (response == null) {
+                res.msg = MSG_ERROR_CONSULTA_VENTAS;
+                return res;
             }
 
-        }
-        catch(Exception e)
-        {
+            res.reporteText = "";
+            res.codigo = response.optString(KEY_CODIGO, "02");
+
+            if ("00".equals(res.codigo)) {
+                res.idSucursal = response.optString("IdSucursal", "");
+                res.nombreSucursal = response.optString("NombreSucursal", "");
+                res.idSorteo = response.optString("IdSorteo", "");
+                res.nombreSorteo = response.optString("NombreSorteo", "");
+                res.ventaHoy = response.optString("VentaHoy", "");
+
+                res.nombreSorteo1 = response.optString("NombreSorteo1", "");
+                res.fechaSorteo1 = response.optString("FechaSorteo1", "");
+                res.ventaSorteo1 = response.optString("VentaSorteo1", "");
+
+                res.nombreSorteo2 = response.optString("NombreSorteo2", "");
+                res.fechaSorteo2 = response.optString("FechaSorteo2", "");
+                res.ventaSorteo2 = response.optString("VentaSorteo2", "");
+
+                res.nombreSorteo3 = response.optString("NombreSorteo3", "");
+                res.fechaSorteo3 = response.optString("FechaSorteo3", "");
+                res.ventaSorteo3 = response.optString("VentaSorteo3", "");
+
+                res.nombreSorteo4 = response.optString("NombreSorteo4", "");
+                res.fechaSorteo4 = response.optString("FechaSorteo4", "");
+                res.ventaSorteo4 = response.optString("VentaSorteo4", "");
+
+                res.nombreSorteo5 = response.optString("NombreSorteo5", "");
+                res.fechaSorteo5 = response.optString("FechaSorteo5", "");
+                res.ventaSorteo5 = response.optString("VentaSorteo5", "");
+
+                res.reporteText = response.optString("ReporteText", "");
+                res.msg = "Reporte generado correctamente";
+            } else {
+                res.msg = MSG_ERROR_CONSULTA_VENTAS;
+            }
+        } catch (Exception e) {
             Log.e("error", e.toString());
-            res.msg="Error al consultar las ventas";
+            res.msg = MSG_ERROR_CONSULTA_VENTAS;
         }
         return res;
     }
 
-    public String getPermisoReporte(String idUsuario)
-    {
+    public String getPermisoReporte(String idUsuario) {
         String res;
-        final String NAMESPACE = "http://cacean.org/";
-        final String URL = "http://getpoints.cacean.com/WSPuntosBeto.asmx"; //godaddy
-        final String SOAPACTION = "http://cacean.org/GetPermisoReporte";
-        final String METHOD = "GetPermisoReporte";
-
-        try
-        {
-
-            // Model the request
-            SoapObject request = new SoapObject(NAMESPACE, METHOD);
-            //Add the parameters
-            request.addProperty("idUsuario", idUsuario); // Paso parametros al WS
-            //Model the envelope
-            SoapSerializationEnvelope envelope = new SoapSerializationEnvelope(SoapEnvelope.VER11);
-            envelope.dotNet = true;
-            envelope.setOutputSoapObject(request);
-            //Model the transport
-            HttpTransportSE androidHttpTransport = new HttpTransportSE(URL);
-            //Call the Web Service
-            androidHttpTransport.call(SOAPACTION, envelope);
-
-            //Get the response
-            SoapObject response = (SoapObject) envelope.getResponse();
-            //Obtener resultados de salida
-
-            res = response.getPropertyAsString("permiso");
-
-        }
-        catch(Exception e)
-        {
+        try {
+            JSONObject body = ApiClient.json("idUsuario", idUsuario);
+            JSONObject response = ApiClient.post("/getPermisoReporte", body);
+            if (response == null) {
+                return MSG_ERROR_CONSULTA_VENTAS;
+            }
+            res = response.optString("Permiso", "");
+        } catch (Exception e) {
             Log.e("error", e.toString());
-            res="Error al consultar las ventas";
+            res = MSG_ERROR_CONSULTA_VENTAS;
         }
         return res;
     }
 
+    private List<Apuesta> parseApuestasTemp(JSONArray arr) {
+        List<Apuesta> list = new ArrayList<>();
+        try {
+            for (int i = 0; i < arr.length(); i++) {
+                JSONObject o = arr.getJSONObject(i);
+                list.add(new Apuesta(
+                        o.optString("IdApuesta", ""),
+                        o.optString("Numero", ""),
+                        o.optString("MontoPrimero", ""),
+                        o.optString("MontoSegundo", ""),
+                        o.optString("MontoTercero", "")
+                ));
+            }
+        } catch (Exception e) {
+            Log.e(CargaDatosWS.class.getSimpleName(), "parseApuestasTemp", e);
+        }
+        return list;
+    }
+
+    private List<Apuesta> parseApuestasGetApuestas(JSONArray arr) {
+        List<Apuesta> list = new ArrayList<>();
+        try {
+            for (int i = 0; i < arr.length(); i++) {
+                JSONObject o = arr.getJSONObject(i);
+                list.add(new Apuesta(
+                        o.optString("ID", ""),
+                        o.optString("NUMERO", ""),
+                        o.optString("MONTO_APUESTA", ""),
+                        o.optString("APUESTA_SEGUNDO", ""),
+                        o.optString("APUESTA_TERCERO", "")
+                ));
+            }
+        } catch (Exception e) {
+            Log.e(CargaDatosWS.class.getSimpleName(), "parseApuestasGetApuestas", e);
+        }
+        return list;
+    }
 }
